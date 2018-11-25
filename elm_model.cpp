@@ -158,6 +158,22 @@ void ELM_Model::sigmoid(cv::Mat &H)
     }
 }
 
+void ELM_Model::normalize(cv::Mat &mat)
+{
+    double minVal,maxVal;
+    cv::minMaxIdx(mat,&minVal,&maxVal);
+    
+    for(int i=0;i<mat.rows;i++)
+    {
+        float * lineData = mat.ptr<float>(i);
+        
+        for(int j=0;j<mat.cols;j++)
+        {
+            lineData[j] = (lineData[j]-minVal) / (maxVal-minVal);
+        }
+    }
+}
+
 void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
 {
     //转化为一维数据
@@ -174,7 +190,9 @@ void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
     
     //计算输出
     cv::Mat output = H * m_W_HO;
-    
+std::cout<<"output:\n"<<output<<std::endl;
+    normalize(output);
+std::cout<<"normalized output:\n"<<output<<std::endl;
     //转化为二进制label
     label.clear();
     for(int j=0;j<output.cols;j++)

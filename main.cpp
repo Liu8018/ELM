@@ -44,5 +44,12 @@ int main()
     model.inputData_2d(mats,labels,3,2);
     model.fit();
     
+    d.at<uchar>(1,2) = 3;
+    std::vector<bool> labelTest;
+    model.query(d,labelTest);
+    for(int i=0;i<labelTest.size();i++)
+        std::cout<<labelTest[i]<<std::endl;
+    
+    
     return 0;
 }

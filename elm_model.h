@@ -60,6 +60,9 @@ private:
     std::string m_defaultActivationMethod;
     void sigmoid(cv::Mat &H);
     
+    //归一化
+    void normalize(cv::Mat &mat);
+    
     int m_width;
     int m_height;
 };
