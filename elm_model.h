@@ -21,6 +21,13 @@ public:
     //
     void fit();
     
+    //查询
+    void query(const cv::Mat &mat, std::vector<bool> &label);
+    
+    //保存和读取模型
+    void save(std::string path);
+    void load(std::string path);
+    
 private:
     int m_I;  //输入层节点数
     int m_H;  //隐藏层节点数
@@ -38,6 +45,12 @@ private:
     //偏置
     cv::Mat m_B_H;      //1×m_H
     
+    //二维数据转换为一维
+    void mat2line(const cv::Mat &mat, float * lineDataPtr);
+    
+    //加偏置
+    void addBias(cv::Mat &mat, const cv::Mat &bias);
+    
     //转化label为target
     void label2target(const std::vector<std::vector<bool>> &labels);
     
@@ -47,6 +60,8 @@ private:
     std::string m_defaultActivationMethod;
     void sigmoid(cv::Mat &H);
     
+    int m_width;
+    int m_height;
 };
 
 #endif // ELM_MODEL_H

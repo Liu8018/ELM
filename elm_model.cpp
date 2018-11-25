@@ -12,10 +12,13 @@ ELM_Model::ELM_Model()
 
 void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, const int resizeWidth, const int resizeHeight)
 {
+    m_width = resizeWidth;
+    m_height = resizeHeight;
+    
     //确定输入数据规模
     m_Q = mats.size();
     //确定输入层节点数
-    m_I = resizeWidth * resizeHeight;
+    m_I = m_width * m_height;
     //确定输出层节点数
     m_O = labels[0].size();
     
@@ -31,22 +34,26 @@ std::cout<<"m_Target:\n"<<m_Target<<std::endl;
     m_inputLayerData.create(cv::Size(m_I,m_Q),CV_32F);
     for(int i=0;i<mats.size();i++)
     {
-        cv::Mat img;
-        cv::resize(mats[i],img,cv::Size(resizeWidth,resizeHeight));
-        
-        float * inputLayerRowData = m_inputLayerData.ptr<float>(i);
-        
-        for(int r=0;r<img.rows;r++)
-        {
-            uchar * rowData = img.ptr<uchar>(r);
-            for(int c=0;c<img.cols;c++)
-            {
-                inputLayerRowData[r*img.cols+c] = float(rowData[c]);
-            }
-        }
+        float * lineDataPtr = m_inputLayerData.ptr<float>(i);
+        mat2line(mats[i],lineDataPtr);
     }
     
 std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
+}
+
+void ELM_Model::mat2line(const cv::Mat &mat, float *lineDataPtr)
+{
+    cv::Mat img;
+    cv::resize(mat,img,cv::Size(m_width,m_height));
+    
+    for(int r=0;r<img.rows;r++)
+    {
+        uchar * rowData = img.ptr<uchar>(r);
+        for(int c=0;c<img.cols;c++)
+        {
+            lineDataPtr[r*img.cols+c] = float(rowData[c]);
+        }
+    }
 }
 
 void ELM_Model::setHiddenNodes(const int hiddenNodes)
@@ -95,33 +102,37 @@ void ELM_Model::fit()
         }
     }
     
-std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
-std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
-    
     //第二步，计算H输出
         //输入乘权重
     m_H_output = m_inputLayerData * m_W_IH;
         //加上偏置
-    for(int i=0;i<m_H_output.rows;i++)
-    {
-        float * H_O_rowData = m_H_output.ptr<float>(i);
-        float * B_rowData = m_B_H.ptr<float>(0);
-        
-        for(int j=0;j<m_H_output.cols;j++)
-        {
-            H_O_rowData[j] += B_rowData[j];
-        }
-    }
+    addBias(m_H_output,m_B_H);
         //激活
     activate(m_H_output);
-    
-std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
     
     //第三步，解出HO权重
     m_W_HO = m_H_output.inv(1) * m_Target;
     
+std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
+std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
+std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
 std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
 std::cout<<"test:\n"<<m_H_output * m_W_HO<<std::endl;
+
+}
+
+void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
+{
+    for(int i=0;i<mat.rows;i++)
+    {
+        float * H_O_rowData = mat.ptr<float>(i);
+        const float * B_rowData = bias.ptr<const float>(0);
+        
+        for(int j=0;j<mat.cols;j++)
+        {
+            H_O_rowData[j] += B_rowData[j];
+        }
+    }
 }
 
 void ELM_Model::activate(cv::Mat &H)
@@ -144,5 +155,33 @@ void ELM_Model::sigmoid(cv::Mat &H)
         {
             H_rowData[j] = 1 / ( 1 + std::exp(-H_rowData[j]) );
         }
+    }
+}
+
+void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
+{
+    //转化为一维数据
+    cv::Mat inputImg;
+    cv::resize(mat,inputImg,cv::Size(m_width,m_height));
+    cv::Mat inputLine(cv::Size(m_width*m_height,1),CV_32F);
+    float * lineDataPtr = inputLine.ptr<float>(0);
+    mat2line(mat,lineDataPtr);
+    
+    //乘权重，加偏置，激活
+    cv::Mat H = inputLine * m_W_IH;
+    addBias(H,m_B_H);
+    activate(H);
+    
+    //计算输出
+    cv::Mat output = H * m_W_HO;
+    
+    //转化为二进制label
+    label.clear();
+    for(int j=0;j<output.cols;j++)
+    {
+        if(output.at<float>(0,j) >= 0.5)
+            label.push_back(1);
+        else
+            label.push_back(0);
     }
 }
