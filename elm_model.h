@@ -14,7 +14,8 @@ public:
     //设置隐藏层节点数
     void setHiddenNodes(const int hiddenNodes);
     //输入二维数据
-    void inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, const int resizeWidth, const int resizeHeight);
+    void inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
+                      const int resizeWidth, const int resizeHeight, const int channels);
     //设置激活函数
     void setActivation(const std::string method);
     
@@ -63,6 +64,7 @@ private:
     //归一化
     void normalize(cv::Mat &mat);
     
+    int m_channels;
     int m_width;
     int m_height;
 };

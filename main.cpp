@@ -25,7 +25,7 @@ void traverseFile(const std::string directory, std::vector<std::string> &files)
 int main()
 {
     //读入数据集
-    std::vector<std::string> files;
+    /*std::vector<std::string> files;
     traverseFile("/home/liu/下载/cnn-keras/dataset/bulbasaur/",files);
     
     std::vector<cv::Mat> imgs;
@@ -52,12 +52,21 @@ int main()
     }
     
     ELM_Model model;
-    model.inputData_2d(imgs,labels,50,50);
+    model.setHiddenNodes(imgs.size()/2);
+    model.inputData_2d(imgs,labels,50,50,1);
     model.fit();
     
-    cv::Mat imgTest = cv::imread("/home/liu/下载/cnn-keras/examples/charmander_hidden.png",0);
+    model.save("model.xml");*/
+    
+    ELM_Model model;
+    model.load("model.xml");
+    
+    cv::Mat imgTest = cv::imread("/home/liu/下载/cnn-keras/examples/bulbasaur_plush.png",0);
     std::vector<bool> labelTest;
     model.query(imgTest,labelTest);
+    
+    cv::imshow("imgTest",imgTest);
+    cv::waitKey();
     
     /*std::vector<cv::Mat> mats;
     cv::Mat a(cv::Size(3,2),CV_8U);

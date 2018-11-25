@@ -10,21 +10,19 @@ ELM_Model::ELM_Model()
     m_defaultActivationMethod = "sigmoid";
 }
 
-void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, const int resizeWidth, const int resizeHeight)
+void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
+                             const int resizeWidth, const int resizeHeight, const int channels)
 {
+    m_channels = channels;
     m_width = resizeWidth;
     m_height = resizeHeight;
     
     //确定输入数据规模
     m_Q = mats.size();
     //确定输入层节点数
-    m_I = m_width * m_height;
+    m_I = m_width * m_height * m_channels;
     //确定输出层节点数
     m_O = labels[0].size();
-    
-    //检查隐藏层节点数是否被设置,若未设置则默认为与输入数据规模的一半相等
-    if(m_H == -1)
-        m_H = m_Q/2;
     
     //转化label为target
     label2target(labels);
@@ -49,10 +47,11 @@ void ELM_Model::mat2line(const cv::Mat &mat, float *lineDataPtr)
     for(int r=0;r<img.rows;r++)
     {
         uchar * rowData = img.ptr<uchar>(r);
-        for(int c=0;c<img.cols;c++)
-        {
-            lineDataPtr[r*img.cols+c] = float(rowData[c]);                      //输入是三通道时有问题
-        }
+        for(int m=0;m<m_channels;m++)
+            for(int c=m;c<img.cols*m_channels;c+=m_channels)
+            {
+                lineDataPtr[r*img.cols*m_channels+c] = float(rowData[c]);
+            }
     }
 }
 
@@ -79,6 +78,10 @@ void ELM_Model::label2target(const std::vector<std::vector<bool> > &labels)
 
 void ELM_Model::fit()
 {
+    //检查隐藏层节点数是否被设置
+    if(m_H == -1)
+        m_H = m_Q/2;
+    
     m_W_IH.create(cv::Size(m_H,m_I),CV_32F);
     m_W_HO.create(cv::Size(m_O,m_H),CV_32F);
     m_B_H.create(cv::Size(m_H,1),CV_32F);
@@ -117,8 +120,8 @@ void ELM_Model::fit()
 std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
 std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
 std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
-std::cout<<"test:\n"<<m_H_output * m_W_HO<<std::endl;
-*/
+*/std::cout<<"test:\n"<<m_H_output * m_W_HO<<std::endl;
+
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
@@ -177,9 +180,7 @@ void ELM_Model::normalize(cv::Mat &mat)
 void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
 {
     //转化为一维数据
-    cv::Mat inputImg;
-    cv::resize(mat,inputImg,cv::Size(m_width,m_height));
-    cv::Mat inputLine(cv::Size(m_width*m_height,1),CV_32F);
+    cv::Mat inputLine(cv::Size(m_width*m_channels*m_height,1),CV_32F);
     float * lineDataPtr = inputLine.ptr<float>(0);
     mat2line(mat,lineDataPtr);
     
@@ -202,4 +203,34 @@ std::cout<<"normalized output:\n"<<output<<std::endl;
         else
             label.push_back(0);
     }
+}
+
+void ELM_Model::save(std::string path)
+{
+    cv::FileStorage fswrite(path,cv::FileStorage::WRITE);
+    
+    fswrite<<"channels"<<m_channels;
+    fswrite<<"width"<<m_width;
+    fswrite<<"height"<<m_height;
+    fswrite<<"W_IH"<<m_W_IH;
+    fswrite<<"W_HO"<<m_W_HO;
+    fswrite<<"B_H"<<m_B_H;
+    fswrite<<"activationMethod"<<m_activationMethod;
+    
+    fswrite.release();
+}
+
+void ELM_Model::load(std::string path)
+{
+    cv::FileStorage fsread(path,cv::FileStorage::READ);
+    
+    fsread["channels"]>>m_channels;
+    fsread["width"]>>m_width;
+    fsread["height"]>>m_height;
+    fsread["W_IH"]>>m_W_IH;
+    fsread["W_HO"]>>m_W_HO;
+    fsread["B_H"]>>m_B_H;
+    fsread["activationMethod"]>>m_activationMethod;
+    
+    fsread.release();
 }
