@@ -22,14 +22,12 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
     //确定输出层节点数
     m_O = labels[0].size();
     
-    //检查隐藏层节点数是否被设置,若未设置则默认为与输入数据规模相等
+    //检查隐藏层节点数是否被设置,若未设置则默认为与输入数据规模的一半相等
     if(m_H == -1)
-        m_H = m_Q;
+        m_H = m_Q/2;
     
     //转化label为target
     label2target(labels);
-    
-std::cout<<"m_Target:\n"<<m_Target<<std::endl;
     
     m_inputLayerData.create(cv::Size(m_I,m_Q),CV_32F);
     for(int i=0;i<mats.size();i++)
@@ -38,7 +36,9 @@ std::cout<<"m_Target:\n"<<m_Target<<std::endl;
         mat2line(mats[i],lineDataPtr);
     }
     
+/*std::cout<<"m_Target:\n"<<m_Target<<std::endl;
 std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
+*/
 }
 
 void ELM_Model::mat2line(const cv::Mat &mat, float *lineDataPtr)
@@ -51,7 +51,7 @@ void ELM_Model::mat2line(const cv::Mat &mat, float *lineDataPtr)
         uchar * rowData = img.ptr<uchar>(r);
         for(int c=0;c<img.cols;c++)
         {
-            lineDataPtr[r*img.cols+c] = float(rowData[c]);
+            lineDataPtr[r*img.cols+c] = float(rowData[c]);                      //输入是三通道时有问题
         }
     }
 }
@@ -113,12 +113,12 @@ void ELM_Model::fit()
     //第三步，解出HO权重
     m_W_HO = m_H_output.inv(1) * m_Target;
     
-std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
+/*std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
 std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
 std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
 std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
 std::cout<<"test:\n"<<m_H_output * m_W_HO<<std::endl;
-
+*/
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
