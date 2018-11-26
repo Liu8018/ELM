@@ -25,33 +25,57 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
     m_O = labels[0].size();
     
     //转化label为target
-    label2target(labels);
+    label2target(labels,m_Target);
     
     m_inputLayerData.create(cv::Size(m_I,m_Q),CV_32F);
     for(int i=0;i<mats.size();i++)
     {
-        float * lineDataPtr = m_inputLayerData.ptr<float>(i);
-        mat2line(mats[i],lineDataPtr);
+        cv::Mat lineROI = m_inputLayerData(cv::Range(i,i+1),cv::Range(0,m_inputLayerData.cols));
+        mat2line(mats[i],lineROI);
     }
     
-/*std::cout<<"m_Target:\n"<<m_Target<<std::endl;
-std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
-*/
+//std::cout<<"m_Target:\n"<<m_Target<<std::endl;
+//std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
+
 }
 
-void ELM_Model::mat2line(const cv::Mat &mat, float *lineDataPtr)
+void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool> > &labels)
+{
+    m_Q_test = mats.size();
+    
+    label2target(labels,m_Target_test);
+    
+    m_inputLayerData_test.create(cv::Size(m_I,m_Q_test),CV_32F);
+    for(int i=0;i<mats.size();i++)
+    {
+        cv::Mat lineROI = m_inputLayerData_test(cv::Range(i,i+1),cv::Range(0,m_inputLayerData_test.cols));
+        mat2line(mats[i],lineROI);
+    }
+}
+
+void ELM_Model::mat2line(const cv::Mat &mat, cv::Mat &line)
 {
     cv::Mat img;
     cv::resize(mat,img,cv::Size(m_width,m_height));
     
-    for(int r=0;r<img.rows;r++)
+    if(m_channels==1)
     {
-        uchar * rowData = img.ptr<uchar>(r);
-        for(int m=0;m<m_channels;m++)
-            for(int c=m;c<img.cols*m_channels;c+=m_channels)
-            {
-                lineDataPtr[r*img.cols*m_channels+c] = float(rowData[c]);
-            }
+        for(int r=0;r<img.rows;r++)
+            for(int c=0;c<img.cols;c++)
+                line.at<float>(0,r*img.cols+c) = float(img.at<uchar>(r,c));
+    }
+    if(m_channels==3)
+    {
+        std::vector<cv::Mat> channels;
+        cv::split(img,channels);
+        int j=0;
+        for(int i=0;i<3;i++)
+            for(int r=0;r<channels[i].rows;r++)
+                for(int c=0;c<channels[i].cols;c++)
+                {
+                    line.at<float>(0,j) = float(channels[i].at<uchar>(r,c));
+                    j++;
+                }
     }
 }
 
@@ -65,14 +89,14 @@ void ELM_Model::setActivation(const std::string method)
     m_activationMethod = method;
 }
 
-void ELM_Model::label2target(const std::vector<std::vector<bool> > &labels)
+void ELM_Model::label2target(const std::vector<std::vector<bool> > &labels, cv::Mat &target)
 {
     int labelLength = labels[0].size();
-    m_Target.create(cv::Size(m_O,m_Q),CV_32F);
+    target.create(cv::Size(m_O,labels.size()),CV_32F);
     for(int i=0;i<labels.size();i++)
     {
         for(int j=0;j<labelLength;j++)
-            m_Target.at<float>(i,j) = float(labels[i][j]);
+            target.at<float>(i,j) = float(labels[i][j]);
     }
 }
 
@@ -87,23 +111,13 @@ void ELM_Model::fit()
     m_B_H.create(cv::Size(m_H,1),CV_32F);
     
     //第一步，随机产生IH权重和H偏置
-    cv::RNG rng(8018);
+    cv::RNG rng((unsigned)time(NULL));
     for(int i=0;i<m_W_IH.rows;i++)
-    {
-        float * W_rowData = m_W_IH.ptr<float>(i);
         for(int j=0;j<m_W_IH.cols;j++)
-        {
-            W_rowData[j] = rng.uniform(-1.0,1.0);
-        }
-    }
+            m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
     
-    {
-        float * B_rowData = m_B_H.ptr<float>(0);
-        for(int j=0;j<m_B_H.cols;j++)
-        {
-            B_rowData[j] = rng.uniform(-1.0,1.0);
-        }
-    }
+    for(int j=0;j<m_B_H.cols;j++)
+        m_B_H.at<float>(0,j) = rng.uniform(-1.0,1.0);
     
     //第二步，计算H输出
         //输入乘权重
@@ -120,22 +134,58 @@ void ELM_Model::fit()
 std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
 std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
 std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
-*/std::cout<<"test:\n"<<m_H_output * m_W_HO<<std::endl;
+std::cout<<"test:\n"<<m_H_output * m_W_HO<<"\n"<<m_Target<<std::endl;
+*/
+    //计算在训练数据上的准确率
+    cv::Mat realOutput = m_H_output * m_W_HO;
+    float finalScore = calcScore(realOutput,m_Target);
+    std::cout<<"Score on training data:"<<finalScore<<std::endl;
+    
+    //计算在测试数据上的准确率
+    if(!m_inputLayerData_test.empty())
+    {
+        cv::Mat m1 = m_inputLayerData_test * m_W_IH;
+        addBias(m1,m_B_H);
+        activate(m1);
+        cv::Mat out = m1 * m_W_HO;
+        float finalScore_test = calcScore(out,m_Target_test);
+        
+        std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
+    }
 
+}
+
+float ELM_Model::calcScore(const cv::Mat &outputData, const cv::Mat &target)
+{
+    int score = 0;
+    for(int i=0;i<outputData.rows;i++)
+    {
+        double minVal,maxVal;
+        int minIdx[2],maxIdx[2];
+        
+        cv::Mat ROI_o = outputData(cv::Range(i,i+1),cv::Range(0,outputData.cols));
+        cv::minMaxIdx(ROI_o,&minVal,&maxVal,minIdx,maxIdx);
+        int maxId_O = maxIdx[1];
+        
+        cv::Mat ROI_t = target(cv::Range(i,i+1),cv::Range(0,target.cols));
+        cv::minMaxIdx(ROI_t,&minVal,&maxVal,minIdx,maxIdx);
+        int maxId_T = maxIdx[1];
+        
+        if(maxId_O == maxId_T)
+            score++;
+    }
+std::cout<<"score:"<<score<<std::endl;
+std::cout<<"outputData.rows:"<<outputData.rows<<std::endl;
+    float finalScore = score/(float)outputData.rows;
+    
+    return finalScore;
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
 {
     for(int i=0;i<mat.rows;i++)
-    {
-        float * H_O_rowData = mat.ptr<float>(i);
-        const float * B_rowData = bias.ptr<const float>(0);
-        
         for(int j=0;j<mat.cols;j++)
-        {
-            H_O_rowData[j] += B_rowData[j];
-        }
-    }
+            mat.at<float>(i,j) += bias.at<float>(0,j);
 }
 
 void ELM_Model::activate(cv::Mat &H)
@@ -152,13 +202,8 @@ void ELM_Model::activate(cv::Mat &H)
 void ELM_Model::sigmoid(cv::Mat &H)
 {
     for(int i=0;i<H.rows;i++)
-    {
-        float * H_rowData = H.ptr<float>(i);
         for(int j=0;j<H.cols;j++)
-        {
-            H_rowData[j] = 1 / ( 1 + std::exp(-H_rowData[j]) );
-        }
-    }
+            H.at<float>(i,j) = 1 / ( 1 + std::exp(-H.at<float>(i,j)) );
 }
 
 void ELM_Model::normalize(cv::Mat &mat)
@@ -167,22 +212,15 @@ void ELM_Model::normalize(cv::Mat &mat)
     cv::minMaxIdx(mat,&minVal,&maxVal);
     
     for(int i=0;i<mat.rows;i++)
-    {
-        float * lineData = mat.ptr<float>(i);
-        
         for(int j=0;j<mat.cols;j++)
-        {
-            lineData[j] = (lineData[j]-minVal) / (maxVal-minVal);
-        }
-    }
+            mat.at<float>(i,j) = (mat.at<float>(i,j)-minVal) / (maxVal-minVal);
 }
 
 void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
 {
     //转化为一维数据
     cv::Mat inputLine(cv::Size(m_width*m_channels*m_height,1),CV_32F);
-    float * lineDataPtr = inputLine.ptr<float>(0);
-    mat2line(mat,lineDataPtr);
+    mat2line(mat,inputLine);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;
@@ -216,6 +254,7 @@ void ELM_Model::save(std::string path)
     fswrite<<"W_HO"<<m_W_HO;
     fswrite<<"B_H"<<m_B_H;
     fswrite<<"activationMethod"<<m_activationMethod;
+    fswrite<<"label_string"<<m_label_string;
     
     fswrite.release();
 }
@@ -231,6 +270,103 @@ void ELM_Model::load(std::string path)
     fsread["W_HO"]>>m_W_HO;
     fsread["B_H"]>>m_B_H;
     fsread["activationMethod"]>>m_activationMethod;
+    fsread["label_string"]>>m_label_string;
     
     fsread.release();
+}
+
+void ELM_Model::traverseFile(const std::string directory, std::vector<std::string> &files)
+{
+    std::string prefix = directory;
+    if(directory[directory.length()-1] != '/')
+        prefix += '/';
+    
+    files.clear();
+    
+    const char * char_dir = directory.data();
+    
+    DIR* dir = opendir(char_dir);//打开指定目录
+    dirent* p = NULL;//定义遍历指针
+    while((p = readdir(dir)) != NULL)//开始逐个遍历
+    {
+        //linux平台下目录中有"."和".."隐藏文件，需要过滤掉
+        if(p->d_name[0] != '.')//d_name是一个char数组，存放当前遍历到的文件名
+        {
+            std::string name = prefix + std::string(p->d_name);
+            files.push_back(name);
+        }
+    }
+    closedir(dir);//关闭指定目录
+}
+
+void ELM_Model::loadStandardDataset(const std::string datasetPath, const float testSampleRatio,
+                                    const int resizeWidth, const int resizeHeight, const int channels)
+{
+    m_channels = channels;
+    
+    std::vector<cv::Mat> trainImgs;
+    std::vector<cv::Mat> testImgs;
+    
+    std::vector<std::string> files;
+    traverseFile(datasetPath,files);
+    
+    int classes = files.size();
+    std::vector<std::vector<bool>> trainLabelBins;
+    std::vector<std::vector<bool>> testLabelBins;
+    
+    for(int i=0;i<files.size();i++)
+    {
+        std::cout<<"[INFO] loading data from "<<files[i]<<std::endl;
+        
+        std::vector<std::string> subdir_files;
+        traverseFile(files[i],subdir_files);
+        std::random_shuffle(subdir_files.begin(),subdir_files.end());
+        
+        if(!subdir_files.empty())
+        {
+            std::string label = files[i].substr(files[i].find_last_of('/')+1,files[i].length()-1);
+            m_label_string.push_back(label);
+            
+            int trainSamples = subdir_files.size()*(1.0-testSampleRatio);
+            
+            for(int j=0;j<trainSamples;j++)
+            {
+                //std::cout<<subdir_files[j]<<std::endl;
+                
+                cv::Mat src;
+                if(channels == 3)
+                    src = cv::imread(subdir_files[j]);
+                if(channels == 1)
+                    src = cv::imread(subdir_files[j],0);
+                
+                trainImgs.push_back(src);
+                
+                std::vector<bool> labelBin(classes,0);
+                labelBin[i] = 1;
+                trainLabelBins.push_back(labelBin);
+            }
+            
+            for(int j=trainSamples;j<subdir_files.size();j++)
+            {
+                //std::cout<<subdir_files[j]<<std::endl;
+                
+                cv::Mat src;
+                if(channels == 3)
+                    src = cv::imread(subdir_files[j]);
+                if(channels == 1)
+                    src = cv::imread(subdir_files[j],0);
+                
+                testImgs.push_back(src);
+                
+                std::vector<bool> labelBin(classes,0);
+                labelBin[i] = 1;
+                testLabelBins.push_back(labelBin);
+            }
+        }
+    }
+
+    inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
+    
+    if(testSampleRatio > 0)
+        inputData_2d_test(testImgs,testLabelBins);
 }
