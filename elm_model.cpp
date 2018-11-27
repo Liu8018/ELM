@@ -58,6 +58,9 @@ void ELM_Model::mat2line(const cv::Mat &mat, cv::Mat &line)
     cv::Mat img;
     cv::resize(mat,img,cv::Size(m_width,m_height));
     
+    //cv::imshow("resizedImg",img);
+    //cv::waitKey();
+    
     if(m_channels==1)
     {
         for(int r=0;r<img.rows;r++)
@@ -160,16 +163,11 @@ float ELM_Model::calcScore(const cv::Mat &outputData, const cv::Mat &target)
     int score = 0;
     for(int i=0;i<outputData.rows;i++)
     {
-        double minVal,maxVal;
-        int minIdx[2],maxIdx[2];
-        
         cv::Mat ROI_o = outputData(cv::Range(i,i+1),cv::Range(0,outputData.cols));
-        cv::minMaxIdx(ROI_o,&minVal,&maxVal,minIdx,maxIdx);
-        int maxId_O = maxIdx[1];
+        int maxId_O = getMaxId(ROI_o);
         
         cv::Mat ROI_t = target(cv::Range(i,i+1),cv::Range(0,target.cols));
-        cv::minMaxIdx(ROI_t,&minVal,&maxVal,minIdx,maxIdx);
-        int maxId_T = maxIdx[1];
+        int maxId_T = getMaxId(ROI_t);
         
         if(maxId_O == maxId_T)
             score++;
@@ -179,6 +177,16 @@ std::cout<<"outputData.rows:"<<outputData.rows<<std::endl;
     float finalScore = score/(float)outputData.rows;
     
     return finalScore;
+}
+
+int ELM_Model::getMaxId(const cv::Mat &line)
+{
+    double minVal,maxVal;
+    int minIdx[2],maxIdx[2];
+    
+    cv::minMaxIdx(line,&minVal,&maxVal,minIdx,maxIdx);
+    
+    return maxIdx[1];
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
@@ -216,7 +224,7 @@ void ELM_Model::normalize(cv::Mat &mat)
             mat.at<float>(i,j) = (mat.at<float>(i,j)-minVal) / (maxVal-minVal);
 }
 
-void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
+void ELM_Model::query(const cv::Mat &mat, std::string &label)
 {
     //转化为一维数据
     cv::Mat inputLine(cv::Size(m_width*m_channels*m_height,1),CV_32F);
@@ -232,15 +240,9 @@ void ELM_Model::query(const cv::Mat &mat, std::vector<bool> &label)
 std::cout<<"output:\n"<<output<<std::endl;
     normalize(output);
 std::cout<<"normalized output:\n"<<output<<std::endl;
-    //转化为二进制label
-    label.clear();
-    for(int j=0;j<output.cols;j++)
-    {
-        if(output.at<float>(0,j) >= 0.5)
-            label.push_back(1);
-        else
-            label.push_back(0);
-    }
+    
+    int id = getMaxId(output);
+    label = m_label_string[id];
 }
 
 void ELM_Model::save(std::string path)

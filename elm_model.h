@@ -27,7 +27,7 @@ public:
     void fit();
     
     //查询
-    void query(const cv::Mat &mat, std::vector<bool> &label);
+    void query(const cv::Mat &mat, std::string &label);
     
     //保存和读取模型
     void save(std::string path);
@@ -83,6 +83,7 @@ private:
     cv::Mat m_Target_test;
     cv::Mat m_inputLayerData_test;
     
+    int getMaxId(const cv::Mat &line);
     float calcScore(const cv::Mat &outputData, const cv::Mat &target);
 };
 
