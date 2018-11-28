@@ -30,8 +30,11 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
     m_inputLayerData.create(cv::Size(m_I,m_Q),CV_32F);
     for(int i=0;i<mats.size();i++)
     {
+        cv::Mat img;
+        cv::resize(mats[i],img,cv::Size(m_width,m_height));
+        
         cv::Mat lineROI = m_inputLayerData(cv::Range(i,i+1),cv::Range(0,m_inputLayerData.cols));
-        mat2line(mats[i],lineROI);
+        mat2line(img,lineROI, m_channels);
     }
     
 //std::cout<<"m_Target:\n"<<m_Target<<std::endl;
@@ -48,37 +51,11 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
     m_inputLayerData_test.create(cv::Size(m_I,m_Q_test),CV_32F);
     for(int i=0;i<mats.size();i++)
     {
+        cv::Mat img;
+        cv::resize(mats[i],img,cv::Size(m_width,m_height));
+        
         cv::Mat lineROI = m_inputLayerData_test(cv::Range(i,i+1),cv::Range(0,m_inputLayerData_test.cols));
-        mat2line(mats[i],lineROI);
-    }
-}
-
-void ELM_Model::mat2line(const cv::Mat &mat, cv::Mat &line)
-{
-    cv::Mat img;
-    cv::resize(mat,img,cv::Size(m_width,m_height));
-    
-    //cv::imshow("resizedImg",img);
-    //cv::waitKey();
-    
-    if(m_channels==1)
-    {
-        for(int r=0;r<img.rows;r++)
-            for(int c=0;c<img.cols;c++)
-                line.at<float>(0,r*img.cols+c) = float(img.at<uchar>(r,c));
-    }
-    if(m_channels==3)
-    {
-        std::vector<cv::Mat> channels;
-        cv::split(img,channels);
-        int j=0;
-        for(int i=0;i<3;i++)
-            for(int r=0;r<channels[i].rows;r++)
-                for(int c=0;c<channels[i].cols;c++)
-                {
-                    line.at<float>(0,j) = float(channels[i].at<uchar>(r,c));
-                    j++;
-                }
+        mat2line(img,lineROI, m_channels);
     }
 }
 
@@ -90,17 +67,6 @@ void ELM_Model::setHiddenNodes(const int hiddenNodes)
 void ELM_Model::setActivation(const std::string method)
 {
     m_activationMethod = method;
-}
-
-void ELM_Model::label2target(const std::vector<std::vector<bool> > &labels, cv::Mat &target)
-{
-    int labelLength = labels[0].size();
-    target.create(cv::Size(m_O,labels.size()),CV_32F);
-    for(int i=0;i<labels.size();i++)
-    {
-        for(int j=0;j<labelLength;j++)
-            target.at<float>(i,j) = float(labels[i][j]);
-    }
 }
 
 void ELM_Model::fit()
@@ -128,7 +94,9 @@ void ELM_Model::fit()
         //加上偏置
     addBias(m_H_output,m_B_H);
         //激活
-    activate(m_H_output);
+    if(m_activationMethod.empty())
+        m_activationMethod = m_defaultActivationMethod;
+    activate(m_H_output,m_activationMethod);
     
     //第三步，解出HO权重
     m_W_HO = m_H_output.inv(1) * m_Target;
@@ -149,44 +117,13 @@ std::cout<<"test:\n"<<m_H_output * m_W_HO<<"\n"<<m_Target<<std::endl;
     {
         cv::Mat m1 = m_inputLayerData_test * m_W_IH;
         addBias(m1,m_B_H);
-        activate(m1);
+        activate(m1,m_activationMethod);
         cv::Mat out = m1 * m_W_HO;
         float finalScore_test = calcScore(out,m_Target_test);
         
         std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
     }
 
-}
-
-float ELM_Model::calcScore(const cv::Mat &outputData, const cv::Mat &target)
-{
-    int score = 0;
-    for(int i=0;i<outputData.rows;i++)
-    {
-        cv::Mat ROI_o = outputData(cv::Range(i,i+1),cv::Range(0,outputData.cols));
-        int maxId_O = getMaxId(ROI_o);
-        
-        cv::Mat ROI_t = target(cv::Range(i,i+1),cv::Range(0,target.cols));
-        int maxId_T = getMaxId(ROI_t);
-        
-        if(maxId_O == maxId_T)
-            score++;
-    }
-std::cout<<"score:"<<score<<std::endl;
-std::cout<<"outputData.rows:"<<outputData.rows<<std::endl;
-    float finalScore = score/(float)outputData.rows;
-    
-    return finalScore;
-}
-
-int ELM_Model::getMaxId(const cv::Mat &line)
-{
-    double minVal,maxVal;
-    int minIdx[2],maxIdx[2];
-    
-    cv::minMaxIdx(line,&minVal,&maxVal,minIdx,maxIdx);
-    
-    return maxIdx[1];
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
@@ -196,44 +133,18 @@ void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
             mat.at<float>(i,j) += bias.at<float>(0,j);
 }
 
-void ELM_Model::activate(cv::Mat &H)
-{
-    if(m_activationMethod == "sigmoid")
-        sigmoid(H);
-    else
-    {
-        m_activationMethod = m_defaultActivationMethod;
-        activate(H);
-    }
-}
-
-void ELM_Model::sigmoid(cv::Mat &H)
-{
-    for(int i=0;i<H.rows;i++)
-        for(int j=0;j<H.cols;j++)
-            H.at<float>(i,j) = 1 / ( 1 + std::exp(-H.at<float>(i,j)) );
-}
-
-void ELM_Model::normalize(cv::Mat &mat)
-{
-    double minVal,maxVal;
-    cv::minMaxIdx(mat,&minVal,&maxVal);
-    
-    for(int i=0;i<mat.rows;i++)
-        for(int j=0;j<mat.cols;j++)
-            mat.at<float>(i,j) = (mat.at<float>(i,j)-minVal) / (maxVal-minVal);
-}
-
 void ELM_Model::query(const cv::Mat &mat, std::string &label)
 {
     //转化为一维数据
     cv::Mat inputLine(cv::Size(m_width*m_channels*m_height,1),CV_32F);
-    mat2line(mat,inputLine);
+    cv::Mat tmpImg;
+    cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
+    mat2line(tmpImg,inputLine,m_channels);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;
     addBias(H,m_B_H);
-    activate(H);
+    activate(H,m_activationMethod);
     
     //计算输出
     cv::Mat output = H * m_W_HO;
@@ -243,6 +154,23 @@ std::cout<<"normalized output:\n"<<output<<std::endl;
     
     int id = getMaxId(output);
     label = m_label_string[id];
+}
+
+void ELM_Model::query(const cv::Mat &mat, cv::Mat &output)
+{
+    //转化为一维数据
+    cv::Mat inputLine(cv::Size(m_width*m_channels*m_height,1),CV_32F);
+    cv::Mat tmpImg;
+    cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
+    mat2line(tmpImg,inputLine,m_channels);
+    
+    //乘权重，加偏置，激活
+    cv::Mat H = inputLine * m_W_IH;
+    addBias(H,m_B_H);
+    activate(H,m_activationMethod);
+    
+    //计算输出
+    output = H * m_W_HO;
 }
 
 void ELM_Model::save(std::string path)
@@ -277,98 +205,22 @@ void ELM_Model::load(std::string path)
     fsread.release();
 }
 
-void ELM_Model::traverseFile(const std::string directory, std::vector<std::string> &files)
-{
-    std::string prefix = directory;
-    if(directory[directory.length()-1] != '/')
-        prefix += '/';
-    
-    files.clear();
-    
-    const char * char_dir = directory.data();
-    
-    DIR* dir = opendir(char_dir);//打开指定目录
-    dirent* p = NULL;//定义遍历指针
-    while((p = readdir(dir)) != NULL)//开始逐个遍历
-    {
-        //linux平台下目录中有"."和".."隐藏文件，需要过滤掉
-        if(p->d_name[0] != '.')//d_name是一个char数组，存放当前遍历到的文件名
-        {
-            std::string name = prefix + std::string(p->d_name);
-            files.push_back(name);
-        }
-    }
-    closedir(dir);//关闭指定目录
-}
-
-void ELM_Model::loadStandardDataset(const std::string datasetPath, const float testSampleRatio,
-                                    const int resizeWidth, const int resizeHeight, const int channels)
+void ELM_Model::loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
+                                    const int resizeWidth, const int resizeHeight, 
+                                    const int channels, bool validate)
 {
     m_channels = channels;
     
     std::vector<cv::Mat> trainImgs;
     std::vector<cv::Mat> testImgs;
     
-    std::vector<std::string> files;
-    traverseFile(datasetPath,files);
-    
-    int classes = files.size();
     std::vector<std::vector<bool>> trainLabelBins;
     std::vector<std::vector<bool>> testLabelBins;
     
-    for(int i=0;i<files.size();i++)
-    {
-        std::cout<<"[INFO] loading data from "<<files[i]<<std::endl;
-        
-        std::vector<std::string> subdir_files;
-        traverseFile(files[i],subdir_files);
-        std::random_shuffle(subdir_files.begin(),subdir_files.end());
-        
-        if(!subdir_files.empty())
-        {
-            std::string label = files[i].substr(files[i].find_last_of('/')+1,files[i].length()-1);
-            m_label_string.push_back(label);
-            
-            int trainSamples = subdir_files.size()*(1.0-testSampleRatio);
-            
-            for(int j=0;j<trainSamples;j++)
-            {
-                //std::cout<<subdir_files[j]<<std::endl;
-                
-                cv::Mat src;
-                if(channels == 3)
-                    src = cv::imread(subdir_files[j]);
-                if(channels == 1)
-                    src = cv::imread(subdir_files[j],0);
-                
-                trainImgs.push_back(src);
-                
-                std::vector<bool> labelBin(classes,0);
-                labelBin[i] = 1;
-                trainLabelBins.push_back(labelBin);
-            }
-            
-            for(int j=trainSamples;j<subdir_files.size();j++)
-            {
-                //std::cout<<subdir_files[j]<<std::endl;
-                
-                cv::Mat src;
-                if(channels == 3)
-                    src = cv::imread(subdir_files[j]);
-                if(channels == 1)
-                    src = cv::imread(subdir_files[j],0);
-                
-                testImgs.push_back(src);
-                
-                std::vector<bool> labelBin(classes,0);
-                labelBin[i] = 1;
-                testLabelBins.push_back(labelBin);
-            }
-        }
-    }
+    inputImgsFrom(datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,trainSampleRatio,channels,validate);
 
     inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
     
-    if(testSampleRatio > 0)
+    if(validate)
         inputData_2d_test(testImgs,testLabelBins);
 }

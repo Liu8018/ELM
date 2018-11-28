@@ -2,12 +2,8 @@
 #define ELM_MODEL_H
 
 #include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 #include <ctime>
-#include <dirent.h>
-#include <algorithm>
+#include "funcs.h"
 
 class ELM_Model
 {
@@ -28,13 +24,15 @@ public:
     
     //查询
     void query(const cv::Mat &mat, std::string &label);
+    void query(const cv::Mat &mat, cv::Mat &output);
     
     //保存和读取模型
     void save(std::string path);
     void load(std::string path);
     
-    void loadStandardDataset(const std::string datasetPath, const float testSampleRatio,
-                             const int resizeWidth, const int resizeHeight, const int channels);
+    void loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
+                             const int resizeWidth, const int resizeHeight, 
+                             const int channels, bool validate=true);
     
 private:
     int m_I;  //输入层节点数
@@ -53,23 +51,11 @@ private:
     //偏置
     cv::Mat m_B_H;      //1×m_H
     
-    //二维数据转换为一维
-    void mat2line(const cv::Mat &mat, cv::Mat &line);
-    
     //加偏置
     void addBias(cv::Mat &mat, const cv::Mat &bias);
     
-    //转化label为target
-    void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target);
-    
-    //激活
-    void activate(cv::Mat &H);
     std::string m_activationMethod;
     std::string m_defaultActivationMethod;
-    void sigmoid(cv::Mat &H);
-    
-    //归一化
-    void normalize(cv::Mat &mat);
     
     int m_channels;
     int m_width;
@@ -77,14 +63,9 @@ private:
     
     std::vector<std::string> m_label_string;
     
-    void traverseFile(const std::string directory, std::vector<std::string> &files);
-    
     int m_Q_test;
     cv::Mat m_Target_test;
     cv::Mat m_inputLayerData_test;
-    
-    int getMaxId(const cv::Mat &line);
-    float calcScore(const cv::Mat &outputData, const cv::Mat &target);
 };
 
 #endif // ELM_MODEL_H
