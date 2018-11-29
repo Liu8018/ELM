@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <ctime>
-#include "funcs.h"
+#include "functions.h"
 
 class ELM_Model
 {
@@ -12,6 +12,8 @@ public:
     
     //设置隐藏层节点数
     void setHiddenNodes(const int hiddenNodes);
+    //设置随机种子
+    void setRandomState(int randomState);
     //输入二维数据
     void inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
                       const int resizeWidth, const int resizeHeight, const int channels);
@@ -32,9 +34,11 @@ public:
     
     void loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
                              const int resizeWidth, const int resizeHeight, 
-                             const int channels, bool validate=true);
+                             const int channels, bool validate=true, bool shuffle=true);
     
 private:
+    int m_randomState;
+    
     int m_I;  //输入层节点数
     int m_H;  //隐藏层节点数
     int m_O;  //输出层节点数

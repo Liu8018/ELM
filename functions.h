@@ -16,7 +16,8 @@ void inputImgsFrom(const std::string datasetPath,
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 
-                   const float trainSampleRatio, const int channels, bool validate=true);
+                   const float trainSampleRatio, const int channels, 
+                   bool validate=true, bool shuffle=true);
 
 //二维数据转换为一维(从AxB到1xAB)
 void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels);

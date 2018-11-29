@@ -26,7 +26,7 @@ void ELM_IN_ELM_Model::setSubModelHiddenNodes(const int modelId, const int n_nod
 
 void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float trainSampleRatio, 
                                            const int resizeWidth, const int resizeHeight, const int channels, 
-                                           bool validate)
+                                           bool validate, bool shuffle)
 {
     m_datasetPath = path;
     m_trainSampleRatio = trainSampleRatio;
@@ -34,17 +34,21 @@ void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float t
     m_height = resizeHeight;
     m_channels = channels;
     m_validate = validate;
+    m_shuffle = shuffle;
 }
 
 void ELM_IN_ELM_Model::fitSubModels()
 {
-    m_subModelToTrain.loadStandardDataset(m_datasetPath,m_trainSampleRatio,m_width,m_height,m_channels,m_validate);
+    m_subModelToTrain.loadStandardDataset(m_datasetPath,m_trainSampleRatio,m_width,m_height,m_channels,m_validate,m_shuffle);
+    
+    int randomState = (unsigned)time(NULL);
     
     //训练子模型
     for(int i=0;i<m_n_models;i++)
     {
         if(m_subModelHiddenNodes[i] != -1)
             m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
+        m_subModelToTrain.setRandomState(randomState++);
         m_subModelToTrain.fit();
         m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml");
     }
@@ -63,9 +67,9 @@ void ELM_IN_ELM_Model::fitMainModel(const int Q)
     std::vector<cv::Mat> testImgs;
     std::vector<std::vector<bool>> trainLabelBins;
     std::vector<std::vector<bool>> testLabelBins;
-    inputImgsFrom(m_datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,m_trainSampleRatio,m_channels,m_validate);
+    inputImgsFrom(m_datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,m_trainSampleRatio,m_channels,m_validate,m_shuffle);
     
-    if(trainImgs.size() < Q)
+    if(int(trainImgs.size()) < Q)
     {
         std::cout<<"Too small scale of training data!"<<std::endl;
         return;
@@ -73,10 +77,17 @@ void ELM_IN_ELM_Model::fitMainModel(const int Q)
     
     //为H和T分配空间
     int M = m_n_models;
-    m_Q = Q;
+    if(Q==-1)
+        m_Q = trainImgs.size();
+    else
+        m_Q = Q;
     m_C = trainLabelBins[0].size();
     cv::Mat H(cv::Size(M*m_C,m_Q),CV_32F);
     cv::Mat T(cv::Size(m_C,m_Q),CV_32F);
+    
+    std::cout<<"Q:"<<m_Q<<std::endl
+             <<"M:"<<M<<std::endl
+             <<"C:"<<m_C<<std::endl;
     
     //为H和T赋值
     for(int q=0;q<m_Q;q++)
@@ -100,6 +111,11 @@ void ELM_IN_ELM_Model::fitMainModel(const int Q)
     float finalScore = calcScore(realOutput,T);
     std::cout<<"Score on training data:"<<finalScore<<std::endl;
     
+/*std::cout<<"T:"<<T.size<<"\n"<<T<<std::endl;
+std::cout<<"H:"<<H.size<<"\n"<<H<<std::endl;
+std::cout<<"F:"<<m_F.size<<"\n"<<m_F<<std::endl;
+std::cout<<"H*F:"<<realOutput.size<<"\n"<<H*m_F<<std::endl;
+*/
     //计算在测试数据上的准确率
     if(m_validate)
     {
@@ -145,16 +161,17 @@ void ELM_IN_ELM_Model::save()
 void ELM_IN_ELM_Model::load()
 {
     cv::FileStorage fsread(m_modelPath+"mainModel.xml",cv::FileStorage::READ);
-    
+
     fsread["n_models"]>>m_n_models;
     fsread["subModelPath"]>>m_modelPath;
     fsread["channels"]>>m_channels;
     fsread["C"]>>m_C;
     fsread["F"]>>m_F;
     fsread["label_string"]>>m_label_string;
-    
+
     fsread.release();
-    
+
+    m_subModels.resize(m_n_models);
     for(int m=0;m<m_n_models;m++)
         m_subModels[m].load(m_modelPath+"subModel"+std::to_string(m)+".xml");
 }
@@ -171,6 +188,7 @@ void ELM_IN_ELM_Model::query(const cv::Mat &mat, std::string &label)
     }
     
     cv::Mat output = H * m_F;
+    std::cout<<output<<std::endl;
     int maxId = getMaxId(output);
     
     label.assign(m_label_string[maxId]);

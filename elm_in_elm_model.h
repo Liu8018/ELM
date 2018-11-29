@@ -12,10 +12,10 @@ public:
     
     void loadStandardDataset(const std::string path, const float trainSampleRatio,
                              const int resizeWidth, const int resizeHeight, 
-                             const int channels, bool validate=true);
+                             const int channels, bool validate=true,bool shuffle=true);
     
     void fitSubModels();
-    void fitMainModel(const int Q);
+    void fitMainModel(const int Q=-1);
     
     void save();
     void load();
@@ -29,6 +29,8 @@ private:
     bool m_validate;
     
     ELM_Model m_subModelToTrain;
+    
+    bool m_shuffle;
     
     std::vector<ELM_Model> m_subModels;
     

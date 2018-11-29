@@ -1,4 +1,4 @@
-#include "funcs.h"
+#include "functions.h"
 
 //加载图像
 void inputImgsFrom(const std::string datasetPath, 
@@ -6,7 +6,7 @@ void inputImgsFrom(const std::string datasetPath,
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 
-                   const float trainSampleRatio, const int channels, bool validate)
+                   const float trainSampleRatio, const int channels, bool validate, bool shuffle)
 {
     std::vector<std::string> files;
     traverseFile(datasetPath,files);
@@ -21,7 +21,8 @@ void inputImgsFrom(const std::string datasetPath,
         traverseFile(files[i],subdir_files);
         
         //随机打乱顺序
-        std::random_shuffle(subdir_files.begin(),subdir_files.end());
+        if(shuffle)
+            std::random_shuffle(subdir_files.begin(),subdir_files.end());
         
         if(!subdir_files.empty())
         {

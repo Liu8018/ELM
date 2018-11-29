@@ -8,6 +8,7 @@ ELM_Model::ELM_Model()
     m_Q = -1;
     
     m_defaultActivationMethod = "sigmoid";
+    m_randomState = -1;
 }
 
 void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
@@ -36,6 +37,7 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
         cv::Mat lineROI = m_inputLayerData(cv::Range(i,i+1),cv::Range(0,m_inputLayerData.cols));
         mat2line(img,lineROI, m_channels);
     }
+    normalize(m_inputLayerData);
     
 //std::cout<<"m_Target:\n"<<m_Target<<std::endl;
 //std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
@@ -57,6 +59,7 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
         cv::Mat lineROI = m_inputLayerData_test(cv::Range(i,i+1),cv::Range(0,m_inputLayerData_test.cols));
         mat2line(img,lineROI, m_channels);
     }
+    normalize(m_inputLayerData_test);
 }
 
 void ELM_Model::setHiddenNodes(const int hiddenNodes)
@@ -67,6 +70,11 @@ void ELM_Model::setHiddenNodes(const int hiddenNodes)
 void ELM_Model::setActivation(const std::string method)
 {
     m_activationMethod = method;
+}
+
+void ELM_Model::setRandomState(int randomState)
+{
+    m_randomState = randomState;
 }
 
 void ELM_Model::fit()
@@ -80,7 +88,12 @@ void ELM_Model::fit()
     m_B_H.create(cv::Size(m_H,1),CV_32F);
     
     //第一步，随机产生IH权重和H偏置
-    cv::RNG rng((unsigned)time(NULL));
+    cv::RNG rng;
+    if(m_randomState != -1)
+        rng.state = m_randomState;
+    else
+        rng.state = (unsigned)time(NULL);
+    std::cout<<"rand:"<<rng.state<<std::endl;
     for(int i=0;i<m_W_IH.rows;i++)
         for(int j=0;j<m_W_IH.cols;j++)
             m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
@@ -140,6 +153,7 @@ void ELM_Model::query(const cv::Mat &mat, std::string &label)
     cv::Mat tmpImg;
     cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
     mat2line(tmpImg,inputLine,m_channels);
+    normalize(inputLine);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;
@@ -148,9 +162,6 @@ void ELM_Model::query(const cv::Mat &mat, std::string &label)
     
     //计算输出
     cv::Mat output = H * m_W_HO;
-std::cout<<"output:\n"<<output<<std::endl;
-    normalize(output);
-std::cout<<"normalized output:\n"<<output<<std::endl;
     
     int id = getMaxId(output);
     label = m_label_string[id];
@@ -163,6 +174,7 @@ void ELM_Model::query(const cv::Mat &mat, cv::Mat &output)
     cv::Mat tmpImg;
     cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
     mat2line(tmpImg,inputLine,m_channels);
+    normalize(inputLine);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;
@@ -207,7 +219,7 @@ void ELM_Model::load(std::string path)
 
 void ELM_Model::loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
                                     const int resizeWidth, const int resizeHeight, 
-                                    const int channels, bool validate)
+                                    const int channels, bool validate, bool shuffle)
 {
     m_channels = channels;
     
@@ -217,7 +229,7 @@ void ELM_Model::loadStandardDataset(const std::string datasetPath, const float t
     std::vector<std::vector<bool>> trainLabelBins;
     std::vector<std::vector<bool>> testLabelBins;
     
-    inputImgsFrom(datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,trainSampleRatio,channels,validate);
+    inputImgsFrom(datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,trainSampleRatio,channels,validate,shuffle);
 
     inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
     
