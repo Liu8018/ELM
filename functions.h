@@ -21,8 +21,7 @@ void inputImgsFrom(const std::string datasetPath,
                    bool validate=true, bool shuffle=true);
 
 //加载mnist数据集
-void loadMnistData(const std::string path, const float trainSampleRatio, 
-                   std::vector<std::string> &label_string,
+void loadMnistData_csv(const std::string path, const float trainSampleRatio, 
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 

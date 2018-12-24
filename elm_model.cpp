@@ -81,7 +81,12 @@ void ELM_Model::fit()
 {
     //检查隐藏层节点数是否被设置
     if(m_H == -1)
-        m_H = 2*m_Q/3;
+        m_H = m_Q/2;
+    
+    std::cout<<"Q:"<<m_Q<<std::endl;
+    std::cout<<"I:"<<m_I<<std::endl;
+    std::cout<<"H:"<<m_H<<std::endl;
+    std::cout<<"O:"<<m_O<<std::endl;
     
     m_W_IH.create(cv::Size(m_H,m_I),CV_32F);
     m_W_HO.create(cv::Size(m_O,m_H),CV_32F);

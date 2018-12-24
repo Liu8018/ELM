@@ -21,7 +21,7 @@ public:
     //设置激活函数
     void setActivation(const std::string method);
     
-    //
+    //训练
     void fit();
     
     //查询

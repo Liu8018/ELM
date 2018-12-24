@@ -66,8 +66,7 @@ void inputImgsFrom(const std::string datasetPath,
     }
 }
 
-void loadMnistData(const std::string path, const float trainSampleRatio, 
-                   std::vector<std::string> &label_string,
+void loadMnistData_csv(const std::string path, const float trainSampleRatio,
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 
@@ -85,12 +84,16 @@ void loadMnistData(const std::string path, const float trainSampleRatio,
     if(shuffle)
         std::random_shuffle(lines.begin(),lines.end());
     
-    for(int j=0;j<lines.size();j++)
+    int trainSize = lines.size()*trainSampleRatio;
+    
+    for(int j=0;j<trainSize;j++)
     {
         std::string line;
         line.assign(lines[j]);
         
-        label_string.push_back(line.substr(0,1));
+        std::vector<bool> label_bin(10,0);
+        label_bin[line[0]-48] = 1;
+        trainLabelBins.push_back(label_bin);
 
         cv::Mat img(28,28,CV_8U);
         int pixNum=0;
@@ -115,9 +118,53 @@ void loadMnistData(const std::string path, const float trainSampleRatio,
             pixNum++;
         }
 
-        cv::namedWindow("img",0);
-        cv::imshow("img",img);
-        cv::waitKey();
+        //cv::namedWindow("img",0);
+        //cv::imshow("img",img);
+        //cv::waitKey();
+        
+        trainImgs.push_back(img);
+    }
+    
+    if(!validate)
+        return;
+    
+    for(int j=trainSize;j<lines.size();j++)
+    {
+        std::string line;
+        line.assign(lines[j]);
+        
+        std::vector<bool> label_bin(10,0);
+        label_bin[line[0]-48] = 1;
+        testLabelBins.push_back(label_bin);
+
+        cv::Mat img(28,28,CV_8U);
+        int pixNum=0;
+        for(int i=2;i<line.size();i++)
+        {
+            int value=0;
+            
+            if(line[i] == ',')
+                continue;
+            
+            while(i<line.size() && line[i] != ',')
+            {
+                value = value*10 + line[i] - 48;
+                i++;
+            }
+            i--;
+            
+            int y = pixNum/28;
+            int x = pixNum%28;
+            img.at<uchar>(y,x) = value;
+            
+            pixNum++;
+        }
+
+        //cv::namedWindow("img",0);
+        //cv::imshow("img",img);
+        //cv::waitKey();
+        
+        testImgs.push_back(img);
     }
 }
 

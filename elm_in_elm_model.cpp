@@ -35,12 +35,26 @@ void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float t
     m_channels = channels;
     m_validate = validate;
     m_shuffle = shuffle;
+    
+    m_subModelToTrain.loadStandardDataset(m_datasetPath,m_trainSampleRatio,m_width,m_height,m_channels,m_validate,m_shuffle);
+}
+
+void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool validate, bool shuffle)
+{
+    std::vector<cv::Mat> trainImgs;
+    std::vector<cv::Mat> testImgs;
+    
+    std::vector<std::vector<bool>> trainLabelBins;
+    std::vector<std::vector<bool>> testLabelBins;
+    loadMnistData_csv(path,trainSampleRatio,trainImgs,testImgs,trainLabelBins,testLabelBins,validate,shuffle);
+    
+    m_subModelToTrain.inputData_2d(trainImgs,trainLabelBins,28,28,1);
+    if(validate)
+        m_subModelToTrain.inputData_2d_test(testImgs,testLabelBins);
 }
 
 void ELM_IN_ELM_Model::fitSubModels()
 {
-    m_subModelToTrain.loadStandardDataset(m_datasetPath,m_trainSampleRatio,m_width,m_height,m_channels,m_validate,m_shuffle);
-    
     int randomState = (unsigned)time(NULL);
     
     //训练子模型

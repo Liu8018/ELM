@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "elm_in_elm_model.h"
 
 int main()
 {
@@ -50,15 +50,11 @@ int main()
     model.fitMainModel();
     model.save();*/
     
-    std::vector<std::string> label_string;
-
-    std::vector<cv::Mat> trainImgs;
-    std::vector<cv::Mat> testImgs;
-    
-    std::vector<std::vector<bool>> trainLabelBins;
-    std::vector<std::vector<bool>> testLabelBins;
-    loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/子集/sub_train3.csv",0.1,
-                  label_string,trainImgs,testImgs,trainLabelBins,testLabelBins);
+    ELM_IN_ELM_Model model(10,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
+    //for(int i=0;i<10;i++)
+    //    model.setSubModelHiddenNodes(i,(i+1)*400);
+    model.fitSubModels();
 
     
     return 0;
