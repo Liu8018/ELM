@@ -37,7 +37,7 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
         cv::Mat lineROI = m_inputLayerData(cv::Range(i,i+1),cv::Range(0,m_inputLayerData.cols));
         mat2line(img,lineROI, m_channels);
     }
-    normalize(m_inputLayerData);
+    normalize_img(m_inputLayerData);
     
 //std::cout<<"m_Target:\n"<<m_Target<<std::endl;
 //std::cout<<"m_inputLayerData:\n"<<m_inputLayerData<<std::endl;
@@ -59,7 +59,7 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
         cv::Mat lineROI = m_inputLayerData_test(cv::Range(i,i+1),cv::Range(0,m_inputLayerData_test.cols));
         mat2line(img,lineROI, m_channels);
     }
-    normalize(m_inputLayerData_test);
+    normalize_img(m_inputLayerData_test);
 }
 
 void ELM_Model::setHiddenNodes(const int hiddenNodes)
@@ -81,7 +81,7 @@ void ELM_Model::fit()
 {
     //检查隐藏层节点数是否被设置
     if(m_H == -1)
-        m_H = m_Q/2;
+        m_H = 2*m_Q/3;
     
     m_W_IH.create(cv::Size(m_H,m_I),CV_32F);
     m_W_HO.create(cv::Size(m_O,m_H),CV_32F);
@@ -93,7 +93,6 @@ void ELM_Model::fit()
         rng.state = m_randomState;
     else
         rng.state = (unsigned)time(NULL);
-    std::cout<<"rand:"<<rng.state<<std::endl;
     for(int i=0;i<m_W_IH.rows;i++)
         for(int j=0;j<m_W_IH.cols;j++)
             m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
@@ -153,7 +152,7 @@ void ELM_Model::query(const cv::Mat &mat, std::string &label)
     cv::Mat tmpImg;
     cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
     mat2line(tmpImg,inputLine,m_channels);
-    normalize(inputLine);
+    normalize_img(inputLine);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;
@@ -174,7 +173,7 @@ void ELM_Model::query(const cv::Mat &mat, cv::Mat &output)
     cv::Mat tmpImg;
     cv::resize(mat,tmpImg,cv::Size(m_width,m_height));
     mat2line(tmpImg,inputLine,m_channels);
-    normalize(inputLine);
+    normalize_img(inputLine);
     
     //乘权重，加偏置，激活
     cv::Mat H = inputLine * m_W_IH;

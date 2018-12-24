@@ -7,7 +7,8 @@ SOURCES += \
         main.cpp \
     elm_model.cpp \
     elm_in_elm_model.cpp \
-    functions.cpp
+    functions.cpp \
+    elm_cnn_model.cpp
 
 LIBS += /usr/lib64/libopencv_core.so \      #核心部分
         /usr/lib64/libopencv_imgproc.so \
@@ -17,4 +18,5 @@ LIBS += /usr/lib64/libopencv_core.so \      #核心部分
 HEADERS += \
     elm_model.h \
     elm_in_elm_model.h \
-    functions.h
+    functions.h \
+    elm_cnn_model.h

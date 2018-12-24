@@ -123,7 +123,7 @@ std::cout<<"H*F:"<<realOutput.size<<"\n"<<H*m_F<<std::endl;
         cv::Mat T_test(cv::Size(m_C,testImgs.size()),CV_32F);
         
         //给H_test和T_test赋值
-        for(int q=0;q<testImgs.size();q++)
+        for(int q=0;q<int(testImgs.size());q++)
         {
             for(int m=0;m<M;m++)
             {

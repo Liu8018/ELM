@@ -14,6 +14,8 @@ public:
                              const int resizeWidth, const int resizeHeight, 
                              const int channels, bool validate=true,bool shuffle=true);
     
+    void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
+    
     void fitSubModels();
     void fitMainModel(const int Q=-1);
     

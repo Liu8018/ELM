@@ -9,6 +9,7 @@
 #include <opencv2/highgui.hpp>
 #include <dirent.h>
 #include <algorithm>
+#include <fstream>
 
 //加载图像
 void inputImgsFrom(const std::string datasetPath, 
@@ -17,6 +18,14 @@ void inputImgsFrom(const std::string datasetPath,
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 
                    const float trainSampleRatio, const int channels, 
+                   bool validate=true, bool shuffle=true);
+
+//加载mnist数据集
+void loadMnistData(const std::string path, const float trainSampleRatio, 
+                   std::vector<std::string> &label_string,
+                   std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
+                   std::vector<std::vector<bool> > &trainLabelBins, 
+                   std::vector<std::vector<bool> > &testLabelBins, 
                    bool validate=true, bool shuffle=true);
 
 //二维数据转换为一维(从AxB到1xAB)
@@ -33,6 +42,7 @@ void sigmoid(cv::Mat &H);
 
 //归一化
 void normalize(cv::Mat &mat);
+void normalize_img(cv::Mat &mat);
 
 //遍历一个目录
 void traverseFile(const std::string directory, std::vector<std::string> &files);

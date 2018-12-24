@@ -1,8 +1,27 @@
-#include "elm_in_elm_model.h"
+#include "functions.h"
 
 int main()
 {
-    /*ELM_IN_ELM_Model model(100,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    /*cv::Mat mat(6,6,CV_32F,cv::Scalar(1));
+    mat.at<float>(0,4) = 3;
+    mat.at<float>(2,3) = 4;
+    mat.at<float>(4,2) = 5;
+    mat.at<float>(5,1) = 6;
+    mat.at<float>(1,2) = 7;
+    mat.at<float>(3,3) = 4;
+    mat.at<float>(2,4) = 2;
+    mat.at<float>(5,5) = 1;
+    
+    std::cout<<"src:\n"<<mat<<std::endl;
+    
+    ELM_CNN_Model model;
+    model.test(mat,mat);
+    
+    std::cout<<"dst:\n"<<mat<<std::endl;
+    */
+/*
+    //加载ELM_IN_ELM模型
+    ELM_IN_ELM_Model model(100,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
     model.load();
     
     cv::Mat src = cv::imread("/home/liu/下载/cnn-keras/examples/squirtle_plush.png",0);
@@ -18,27 +37,29 @@ int main()
     model.query(src,label);
     runtime = (cv::getTickCount()-runtime)/cv::getTickFrequency();
     std::cout<<label<<std::endl;
-    std::cout<<runtime<<"s"<<std::endl;*/
+    std::cout<<runtime<<"s"<<std::endl;
+*/
     
-    ELM_IN_ELM_Model model(50,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadStandardDataset("/run/media/liu/D/linux-windows/dataset/digit",0.1,16,16,1,true,true);
+
+    //训练ELM_IN_ELM模型
+    /*ELM_IN_ELM_Model model(80,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model.loadStandardDataset("/run/media/liu/D/linux-windows/dataset/口袋妖怪", 0.6,30,30,3,true,false);
+    for(int i=0;i<80;i++)
+        model.setSubModelHiddenNodes(i,120+5*i);
     model.fitSubModels();
     model.fitMainModel();
-    model.save();
+    model.save();*/
     
-    /*ELM_Model model;
+    std::vector<std::string> label_string;
+
+    std::vector<cv::Mat> trainImgs;
+    std::vector<cv::Mat> testImgs;
     
-    model.setHiddenNodes(200);
-    model.loadStandardDataset("/run/media/liu/D/linux-windows/dataset/digit",0.2,16,16,1);
-    model.fit();
-    model.save("model.xml");*/
-    
-    
-    /*model.load("model.xml");
-    cv::Mat testImg = cv::imread("/run/media/liu/D/linux-windows/dataset/digit_test/3_2.png",0);
-    std::string label;
-    model.query(testImg,label);
-    std::cout<<"result:"<<label<<std::endl;*/
+    std::vector<std::vector<bool>> trainLabelBins;
+    std::vector<std::vector<bool>> testLabelBins;
+    loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/子集/sub_train3.csv",0.1,
+                  label_string,trainImgs,testImgs,trainLabelBins,testLabelBins);
+
     
     return 0;
 }

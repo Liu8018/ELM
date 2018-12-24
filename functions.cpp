@@ -21,6 +21,7 @@ void inputImgsFrom(const std::string datasetPath,
         traverseFile(files[i],subdir_files);
         
         //随机打乱顺序
+        srand(time(NULL));
         if(shuffle)
             std::random_shuffle(subdir_files.begin(),subdir_files.end());
         
@@ -62,6 +63,61 @@ void inputImgsFrom(const std::string datasetPath,
                     testLabelBins.push_back(labelBin);
                 }
         }
+    }
+}
+
+void loadMnistData(const std::string path, const float trainSampleRatio, 
+                   std::vector<std::string> &label_string,
+                   std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
+                   std::vector<std::vector<bool> > &trainLabelBins, 
+                   std::vector<std::vector<bool> > &testLabelBins, 
+                   bool validate, bool shuffle)
+{
+    std::ifstream fin(path);
+    
+    std::string tmpLine;
+    std::vector<std::string> lines;
+    
+    while(std::getline(fin,tmpLine))
+        lines.push_back(tmpLine);
+    
+    srand(time(NULL));
+    if(shuffle)
+        std::random_shuffle(lines.begin(),lines.end());
+    
+    for(int j=0;j<lines.size();j++)
+    {
+        std::string line;
+        line.assign(lines[j]);
+        
+        label_string.push_back(line.substr(0,1));
+
+        cv::Mat img(28,28,CV_8U);
+        int pixNum=0;
+        for(int i=2;i<line.size();i++)
+        {
+            int value=0;
+            
+            if(line[i] == ',')
+                continue;
+            
+            while(i<line.size() && line[i] != ',')
+            {
+                value = value*10 + line[i] - 48;
+                i++;
+            }
+            i--;
+            
+            int y = pixNum/28;
+            int x = pixNum%28;
+            img.at<uchar>(y,x) = value;
+            
+            pixNum++;
+        }
+
+        cv::namedWindow("img",0);
+        cv::imshow("img",img);
+        cv::waitKey();
     }
 }
 
@@ -128,6 +184,13 @@ void normalize(cv::Mat &mat)
     for(int i=0;i<mat.rows;i++)
         for(int j=0;j<mat.cols;j++)
             mat.at<float>(i,j) = (mat.at<float>(i,j)-minVal) / (maxVal-minVal);
+}
+
+void normalize_img(cv::Mat &mat)
+{
+    for(int i=0;i<mat.rows;i++)
+        for(int j=0;j<mat.cols;j++)
+            mat.at<float>(i,j) = mat.at<float>(i,j) / 255.0;
 }
 
 //遍历一个目录
