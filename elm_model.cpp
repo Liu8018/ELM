@@ -77,70 +77,117 @@ void ELM_Model::setRandomState(int randomState)
     m_randomState = randomState;
 }
 
-void ELM_Model::fit()
+void ELM_Model::fit(int batchSize)
 {
     //检查隐藏层节点数是否被设置
     if(m_H == -1)
         m_H = m_Q/2;
     
+    //检查是否设置batchSize
+    if(batchSize == -1)
+        batchSize = m_Q;
+    
+    //输出信息
     std::cout<<"Q:"<<m_Q<<std::endl;
+    std::cout<<"batchSize:"<<batchSize<<std::endl;
     std::cout<<"I:"<<m_I<<std::endl;
     std::cout<<"H:"<<m_H<<std::endl;
     std::cout<<"O:"<<m_O<<std::endl;
     
-    m_W_IH.create(cv::Size(m_H,m_I),CV_32F);
-    m_W_HO.create(cv::Size(m_O,m_H),CV_32F);
-    m_B_H.create(cv::Size(m_H,1),CV_32F);
+    //初次训练的初始化
+    if(m_W_IH.empty())
+    {
+        //分配空间
+        m_W_IH.create(cv::Size(m_H,m_I),CV_32F);
+        m_W_HO.create(cv::Size(m_O,m_H),CV_32F);
+        m_B_H.create(cv::Size(m_H,1),CV_32F);
+        
+        //K初始化
+        m_K.create(cv::Size(m_H,m_H),CV_32F);
+        m_K = cv::Scalar(0);
+        
+        //输出权重初始化
+        m_W_HO = cv::Scalar(0);
+        
+        //随机产生IH权重和H偏置
+        cv::RNG rng;
+        if(m_randomState != -1)
+            rng.state = m_randomState;
+        else
+            rng.state = (unsigned)time(NULL);
+        for(int i=0;i<m_W_IH.rows;i++)
+            for(int j=0;j<m_W_IH.cols;j++)
+                m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
+        
+        for(int j=0;j<m_B_H.cols;j++)
+            m_B_H.at<float>(0,j) = rng.uniform(-1.0,1.0);
+    }
     
-    //第一步，随机产生IH权重和H偏置
-    cv::RNG rng;
-    if(m_randomState != -1)
-        rng.state = m_randomState;
-    else
-        rng.state = (unsigned)time(NULL);
-    for(int i=0;i<m_W_IH.rows;i++)
-        for(int j=0;j<m_W_IH.cols;j++)
-            m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
+    int trainedRatio=0;
+    for(int i=0;i+batchSize<=m_Q;i+=batchSize)
+    {
+        //取批次训练部分数据
+        cv::Mat inputBatchROI = m_inputLayerData(cv::Range(i,i+batchSize),cv::Range(0,m_I));
+        cv::Mat targetBatchROI = m_Target(cv::Range(i,i+batchSize),cv::Range(0,m_O));
+        
+        //计算H输出
+            //输入乘权重
+        m_H_output = inputBatchROI * m_W_IH;
+            //加上偏置
+        addBias(m_H_output,m_B_H);
+            //激活
+        if(m_activationMethod.empty())
+            m_activationMethod = m_defaultActivationMethod;
+        activate(m_H_output,m_activationMethod);
+            //迭代更新K
+        m_K = m_K + m_H_output.t() * m_H_output;
+        
+        //迭代更新HO权重
+        m_W_HO = m_W_HO + m_K.inv(1) * m_H_output.t() * (targetBatchROI - m_H_output*m_W_HO);
+        
+        //输出信息
+        int ratio = (i+batchSize)/(float)m_Q*100;
+        if( ratio - trainedRatio >= 1)
+        {
+            trainedRatio = ratio;
+            
+            //输出训练进度
+            std::cout<<"Trained "<<trainedRatio<<"%"<<
+                       "----------------------------------------"<<std::endl;
+            
+            //计算并输出在该批次训练数据上的准确率
+            cv::Mat output = m_H_output * m_W_HO;
+            float score = calcScore(output,targetBatchROI);
+            std::cout<<"Score on batch training data:"<<score<<std::endl;
+            
+            validate();
+        }
+    }
     
-    for(int j=0;j<m_B_H.cols;j++)
-        m_B_H.at<float>(0,j) = rng.uniform(-1.0,1.0);
-    
-    //第二步，计算H输出
-        //输入乘权重
-    m_H_output = m_inputLayerData * m_W_IH;
-        //加上偏置
-    addBias(m_H_output,m_B_H);
-        //激活
-    if(m_activationMethod.empty())
-        m_activationMethod = m_defaultActivationMethod;
-    activate(m_H_output,m_activationMethod);
-    
-    //第三步，解出HO权重
-    m_W_HO = m_H_output.inv(1) * m_Target;
-    
-/*std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
-std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
-std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
-std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
-std::cout<<"test:\n"<<m_H_output * m_W_HO<<"\n"<<m_Target<<std::endl;
-*/
-    //计算在训练数据上的准确率
-    cv::Mat realOutput = m_H_output * m_W_HO;
-    float finalScore = calcScore(realOutput,m_Target);
-    std::cout<<"Score on training data:"<<finalScore<<std::endl;
-    
+//std::cout<<"m_W_IH:\n"<<m_W_IH<<std::endl;
+//std::cout<<"m_B_H:\n"<<m_B_H<<std::endl;
+//std::cout<<"m_H_output:\n"<<m_H_output<<std::endl;
+//std::cout<<"m_W_HO:\n"<<m_W_HO<<std::endl;
+//std::cout<<"test:\n"<<m_H_output * m_W_HO<<"\n"<<m_Target<<std::endl;
+}
+
+void ELM_Model::validate()
+{
     //计算在测试数据上的准确率
     if(!m_inputLayerData_test.empty())
     {
+        std::cout<<"validate:------------------"<<std::endl;
+                
         cv::Mat m1 = m_inputLayerData_test * m_W_IH;
         addBias(m1,m_B_H);
+        if(m_activationMethod.empty())
+            m_activationMethod = m_defaultActivationMethod;
         activate(m1,m_activationMethod);
-        cv::Mat out = m1 * m_W_HO;
-        float finalScore_test = calcScore(out,m_Target_test);
+        cv::Mat output = m1 * m_W_HO;
+        float finalScore_test = calcScore(output,m_Target_test);
         
         std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
     }
-
 }
 
 void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
@@ -202,6 +249,8 @@ void ELM_Model::save(std::string path)
     fswrite<<"activationMethod"<<m_activationMethod;
     fswrite<<"label_string"<<m_label_string;
     
+    fswrite<<"K"<<m_K;
+    
     fswrite.release();
 }
 
@@ -217,6 +266,8 @@ void ELM_Model::load(std::string path)
     fsread["B_H"]>>m_B_H;
     fsread["activationMethod"]>>m_activationMethod;
     fsread["label_string"]>>m_label_string;
+    
+    fsread["K"]>>m_K;
     
     fsread.release();
 }

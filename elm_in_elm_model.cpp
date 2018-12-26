@@ -53,7 +53,7 @@ void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSa
         m_subModelToTrain.inputData_2d_test(testImgs,testLabelBins);
 }
 
-void ELM_IN_ELM_Model::fitSubModels()
+void ELM_IN_ELM_Model::fitSubModels(int batchSize)
 {
     int randomState = (unsigned)time(NULL);
     
@@ -63,7 +63,7 @@ void ELM_IN_ELM_Model::fitSubModels()
         if(m_subModelHiddenNodes[i] != -1)
             m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
         m_subModelToTrain.setRandomState(randomState++);
-        m_subModelToTrain.fit();
+        m_subModelToTrain.fit(batchSize);
         m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml");
     }
 }

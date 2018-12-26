@@ -22,7 +22,7 @@ public:
     void setActivation(const std::string method);
     
     //训练
-    void fit();
+    void fit(int batchSize = -1);
     
     //查询
     void query(const cv::Mat &mat, std::string &label);
@@ -55,6 +55,9 @@ private:
     //偏置
     cv::Mat m_B_H;      //1×m_H
     
+    //在线序列学习中用到的，保留了历史数据的一个矩阵。等于(H的转置)*H
+    cv::Mat m_K;
+    
     //加偏置
     void addBias(cv::Mat &mat, const cv::Mat &bias);
     
@@ -70,6 +73,9 @@ private:
     int m_Q_test;
     cv::Mat m_Target_test;
     cv::Mat m_inputLayerData_test;
+    
+    //计算在测试数据上的准确率
+    void validate();
 };
 
 #endif // ELM_MODEL_H

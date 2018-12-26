@@ -50,11 +50,11 @@ int main()
     model.fitMainModel();
     model.save();*/
     
-    ELM_IN_ELM_Model model(10,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    ELM_IN_ELM_Model model(1,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
     model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
     //for(int i=0;i<10;i++)
-    //    model.setSubModelHiddenNodes(i,(i+1)*400);
-    model.fitSubModels();
+        model.setSubModelHiddenNodes(0,3000);
+    model.fitSubModels(30000);
 
     
     return 0;
