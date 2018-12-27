@@ -29,12 +29,14 @@ public:
     void query(const cv::Mat &mat, cv::Mat &output);
     
     //保存和读取模型
-    void save(std::string path);
-    void load(std::string path);
+    void save(std::string path, std::string K_path="");
+    void load(std::string path, std::string K_path="");
     
     void loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
                              const int resizeWidth, const int resizeHeight, 
                              const int channels, bool validate=true, bool shuffle=true);
+    
+    void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
     
 private:
     int m_randomState;

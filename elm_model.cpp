@@ -62,6 +62,20 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
     normalize_img(m_inputLayerData_test);
 }
 
+void ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool validate, bool shuffle)
+{
+    std::vector<cv::Mat> trainImgs;
+    std::vector<cv::Mat> testImgs;
+    
+    std::vector<std::vector<bool>> trainLabelBins;
+    std::vector<std::vector<bool>> testLabelBins;
+    loadMnistData_csv(path,trainSampleRatio,trainImgs,testImgs,trainLabelBins,testLabelBins,validate,shuffle);
+    
+    inputData_2d(trainImgs,trainLabelBins,28,28,1);
+    if(validate)
+        inputData_2d_test(testImgs,testLabelBins);
+}
+
 void ELM_Model::setHiddenNodes(const int hiddenNodes)
 {
     m_H = hiddenNodes;
@@ -236,7 +250,7 @@ void ELM_Model::query(const cv::Mat &mat, cv::Mat &output)
     output = H * m_W_HO;
 }
 
-void ELM_Model::save(std::string path)
+void ELM_Model::save(std::string path, std::string K_path)
 {
     cv::FileStorage fswrite(path,cv::FileStorage::WRITE);
     
@@ -249,12 +263,17 @@ void ELM_Model::save(std::string path)
     fswrite<<"activationMethod"<<m_activationMethod;
     fswrite<<"label_string"<<m_label_string;
     
-    fswrite<<"K"<<m_K;
+    if(K_path != "")
+    {
+        cv::FileStorage K_fswrite(K_path,cv::FileStorage::WRITE);
+        K_fswrite<<"K"<<m_K;
+        K_fswrite.release();
+    }
     
     fswrite.release();
 }
 
-void ELM_Model::load(std::string path)
+void ELM_Model::load(std::string path, std::string K_path)
 {
     cv::FileStorage fsread(path,cv::FileStorage::READ);
     
@@ -267,7 +286,12 @@ void ELM_Model::load(std::string path)
     fsread["activationMethod"]>>m_activationMethod;
     fsread["label_string"]>>m_label_string;
     
-    fsread["K"]>>m_K;
+    if(K_path != "")
+    {
+        cv::FileStorage K_fsread(K_path,cv::FileStorage::READ);
+        K_fsread["K"]>>m_K;
+        K_fsread.release();
+    }
     
     fsread.release();
 }

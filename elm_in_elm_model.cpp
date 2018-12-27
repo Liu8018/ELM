@@ -64,17 +64,19 @@ void ELM_IN_ELM_Model::fitSubModels(int batchSize)
             m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
         m_subModelToTrain.setRandomState(randomState++);
         m_subModelToTrain.fit(batchSize);
-        m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml");
+        m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml",
+                               m_modelPath+"subK"+std::to_string(i)+".xml");
     }
 }
 
-void ELM_IN_ELM_Model::fitMainModel(const int Q)
+void ELM_IN_ELM_Model::fitMainModel(int Q)
 {
     //载入子模型
     std::vector<ELM_Model> subModels;
     subModels.resize(m_n_models);
     for(int i=0;i<m_n_models;i++)
-        subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml");
+        subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml",
+                          m_modelPath+"subK"+std::to_string(i)+".xml");
     
     //载入训练数据
     std::vector<cv::Mat> trainImgs;

@@ -17,7 +17,7 @@ public:
     void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
     
     void fitSubModels(int batchSize = -1);
-    void fitMainModel(const int Q=-1);
+    void fitMainModel(int Q=-1);
     
     void save();
     void load();
