@@ -28,7 +28,6 @@ void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float t
                                            const int resizeWidth, const int resizeHeight, const int channels, 
                                            bool validate, bool shuffle)
 {
-    m_datasetPath = path;
     m_trainSampleRatio = trainSampleRatio;
     m_width = resizeWidth;
     m_height = resizeHeight;
@@ -36,21 +35,26 @@ void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float t
     m_validate = validate;
     m_shuffle = shuffle;
     
-    m_subModelToTrain.loadStandardDataset(m_datasetPath,m_trainSampleRatio,m_width,m_height,m_channels,m_validate,m_shuffle);
+    inputImgsFrom(path,m_label_string,m_trainImgs,
+                  m_testImgs,m_trainLabelBins,m_testLabelBins,
+                  m_trainSampleRatio,m_channels,m_validate,m_shuffle);
+    m_Q = m_trainImgs.size();
+    
+    m_subModelToTrain.inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
+    if(validate)
+        m_subModelToTrain.inputData_2d_test(m_testImgs,m_testLabelBins);
 }
 
 void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool validate, bool shuffle)
 {
-    std::vector<cv::Mat> trainImgs;
-    std::vector<cv::Mat> testImgs;
+    loadMnistData_csv(path,trainSampleRatio,
+                      m_trainImgs,m_testImgs,m_trainLabelBins,m_testLabelBins,validate,shuffle);
     
-    std::vector<std::vector<bool>> trainLabelBins;
-    std::vector<std::vector<bool>> testLabelBins;
-    loadMnistData_csv(path,trainSampleRatio,trainImgs,testImgs,trainLabelBins,testLabelBins,validate,shuffle);
+    m_Q = m_trainImgs.size();
     
-    m_subModelToTrain.inputData_2d(trainImgs,trainLabelBins,28,28,1);
+    m_subModelToTrain.inputData_2d(m_trainImgs,m_trainLabelBins,28,28,1);
     if(validate)
-        m_subModelToTrain.inputData_2d_test(testImgs,testLabelBins);
+        m_subModelToTrain.inputData_2d_test(m_testImgs,m_testLabelBins);
 }
 
 void ELM_IN_ELM_Model::fitSubModels(int batchSize)
@@ -66,98 +70,119 @@ void ELM_IN_ELM_Model::fitSubModels(int batchSize)
         m_subModelToTrain.fit(batchSize);
         m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml",
                                m_modelPath+"subK"+std::to_string(i)+".xml");
+        
+        m_subModelToTrain.clear();
     }
 }
 
-void ELM_IN_ELM_Model::fitMainModel(int Q)
+void ELM_IN_ELM_Model::fitMainModel(int batchSize)
 {
     //载入子模型
-    std::vector<ELM_Model> subModels;
-    subModels.resize(m_n_models);
+    m_subModels.resize(m_n_models);
     for(int i=0;i<m_n_models;i++)
-        subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml",
+        m_subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml",
                           m_modelPath+"subK"+std::to_string(i)+".xml");
-    
-    //载入训练数据
-    std::vector<cv::Mat> trainImgs;
-    std::vector<cv::Mat> testImgs;
-    std::vector<std::vector<bool>> trainLabelBins;
-    std::vector<std::vector<bool>> testLabelBins;
-    inputImgsFrom(m_datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,m_trainSampleRatio,m_channels,m_validate,m_shuffle);
-    
-    if(int(trainImgs.size()) < Q)
-    {
-        std::cout<<"Too small scale of training data!"<<std::endl;
-        return;
-    }
     
     //为H和T分配空间
     int M = m_n_models;
-    if(Q==-1)
-        m_Q = trainImgs.size();
-    else
-        m_Q = Q;
-    m_C = trainLabelBins[0].size();
-    cv::Mat H(cv::Size(M*m_C,m_Q),CV_32F);
-    cv::Mat T(cv::Size(m_C,m_Q),CV_32F);
+    if(batchSize==-1)
+        batchSize = m_trainImgs.size();
+    m_C = m_trainLabelBins[0].size();
+    cv::Mat H(cv::Size(M*m_C,batchSize),CV_32F);
+    cv::Mat T(cv::Size(m_C,batchSize),CV_32F);
     
-    std::cout<<"Q:"<<m_Q<<std::endl
-             <<"M:"<<M<<std::endl
-             <<"C:"<<m_C<<std::endl;
+    std::cout<<"Q: "<<m_Q<<std::endl
+             <<"batchSize: "<<batchSize<<std::endl
+             <<"M: "<<M<<std::endl
+             <<"C: "<<m_C<<std::endl;
     
-    //为H和T赋值
-    for(int q=0;q<m_Q;q++)
+    //m_K的初始化
+    if(m_K.empty())
     {
-        for(int m=0;m<M;m++)
-        {
-            cv::Mat ROI = H(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
-            subModels[m].query(trainImgs[q],ROI);
-            normalize(ROI);
-        }
-        
-        for(int c=0;c<m_C;c++)
-            T.at<float>(q,c) = float(trainLabelBins[q][c]);
+        m_K.create(cv::Size(M*m_C,M*m_C),CV_32F);
+        m_K = cv::Scalar(0);
+    }
+    //m_F的初始化
+    if(m_F.empty())
+    {
+        m_F.create(cv::Size(m_C,M*m_C),CV_32F);
+        m_F = cv::Scalar(0);
     }
     
-    //求解F
-    m_F = H.inv(1) * T;
-    
-    //计算在训练数据上的准确率
-    cv::Mat realOutput = H * m_F;
-    float finalScore = calcScore(realOutput,T);
-    std::cout<<"Score on training data:"<<finalScore<<std::endl;
-    
+    int trainedRatio = 0;
+    for(int i=0;i+batchSize<=m_Q;i+=batchSize)
+    {
+        //为H和T赋值
+        for(int q=0;q<batchSize;q++)
+        {
+            for(int m=0;m<M;m++)
+            {
+                cv::Mat ROI = H(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
+                m_subModels[m].query(m_trainImgs[i+q],ROI);
+                normalize(ROI);
+            }
+            
+            for(int c=0;c<m_C;c++)
+                T.at<float>(q,c) = float(m_trainLabelBins[i+q][c]);
+        }
+        
+        //迭代更新K
+        m_K = m_K + H.t() * H;
+        //迭代更新F
+        m_F = m_F + m_K.inv(1) * H.t() * (T - H*m_F);
+        
+        //输出信息
+        int ratio = (i+batchSize)/(float)m_Q*100;
+        if( ratio - trainedRatio >= 1)
+        {
+            trainedRatio = ratio;
+            
+            //输出训练进度
+            std::cout<<"Trained "<<trainedRatio<<"%"<<
+                       "----------------------------------------"<<std::endl;
+            
+            //计算在该批次训练数据上的准确率
+            cv::Mat output = H * m_F;
+            float score = calcScore(output,T);
+            std::cout<<"Score on batch training data:"<<score<<std::endl;
+            
+            //计算在测试数据上的准确率
+            validate();
+        }
+    }
 /*std::cout<<"T:"<<T.size<<"\n"<<T<<std::endl;
 std::cout<<"H:"<<H.size<<"\n"<<H<<std::endl;
 std::cout<<"F:"<<m_F.size<<"\n"<<m_F<<std::endl;
 std::cout<<"H*F:"<<realOutput.size<<"\n"<<H*m_F<<std::endl;
 */
-    //计算在测试数据上的准确率
-    if(m_validate)
+}
+
+void ELM_IN_ELM_Model::validate()
+{
+    int M = m_n_models;
+    
+    cv::Mat H_test(cv::Size(M*m_C,m_testImgs.size()),CV_32F);
+    cv::Mat T_test(cv::Size(m_C,m_testImgs.size()),CV_32F);
+    
+    //给H_test和T_test赋值
+    for(int q=0;q<m_testImgs.size();q++)
     {
-        cv::Mat H_test(cv::Size(M*m_C,testImgs.size()),CV_32F);
-        cv::Mat T_test(cv::Size(m_C,testImgs.size()),CV_32F);
-        
-        //给H_test和T_test赋值
-        for(int q=0;q<int(testImgs.size());q++)
+        for(int m=0;m<M;m++)
         {
-            for(int m=0;m<M;m++)
-            {
-                cv::Mat ROI = H_test(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
-                subModels[m].query(testImgs[q],ROI);
-                normalize(ROI);
-            }
-            
-            for(int c=0;c<m_C;c++)
-                T_test.at<float>(q,c) = float(testLabelBins[q][c]);
+            cv::Mat ROI = H_test(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
+            m_subModels[m].query(m_testImgs[q],ROI);
+            normalize(ROI);
         }
         
-        //计算
-        cv::Mat output = H_test * m_F;
-        float finalScore_test = calcScore(output,T_test);
-        
-        std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
+        for(int c=0;c<m_C;c++)
+            T_test.at<float>(q,c) = float(m_testLabelBins[q][c]);
     }
+    
+    //计算
+    cv::Mat output = H_test * m_F;
+    float finalScore_test = calcScore(output,T_test);
+    
+    std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
 }
 
 void ELM_IN_ELM_Model::save()

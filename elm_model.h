@@ -38,6 +38,8 @@ public:
     
     void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
     
+    void clear();
+    
 private:
     int m_randomState;
     

@@ -17,7 +17,7 @@ public:
     void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
     
     void fitSubModels(int batchSize = -1);
-    void fitMainModel(int Q=-1);
+    void fitMainModel(int batchSize=-1);
     
     void save();
     void load();
@@ -32,11 +32,10 @@ private:
     
     ELM_Model m_subModelToTrain;
     
-    bool m_shuffle;
-    
     std::vector<ELM_Model> m_subModels;
     
-    std::string m_datasetPath;
+    bool m_shuffle;
+    
     std::string m_modelPath;
     int m_width;
     int m_height;
@@ -45,9 +44,19 @@ private:
     int m_Q;
     int m_C;
     
+    cv::Mat m_K;
+    
     cv::Mat m_F;
     
     std::vector<std::string> m_label_string;
+    
+    std::vector<cv::Mat> m_trainImgs;
+    std::vector<cv::Mat> m_testImgs;
+    std::vector<std::vector<bool>> m_trainLabelBins;
+    std::vector<std::vector<bool>> m_testLabelBins;
+    
+    //计算在测试数据上的准确率
+    void validate();
     
 };
 

@@ -11,6 +11,14 @@ ELM_Model::ELM_Model()
     m_randomState = -1;
 }
 
+void ELM_Model::clear()
+{
+    m_W_IH.release();
+    m_B_H.release();
+    m_W_HO.release();
+    m_K.release();
+}
+
 void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
                              const int resizeWidth, const int resizeHeight, const int channels)
 {
@@ -174,6 +182,7 @@ void ELM_Model::fit(int batchSize)
             float score = calcScore(output,targetBatchROI);
             std::cout<<"Score on batch training data:"<<score<<std::endl;
             
+            //计算在测试数据上的准确率
             validate();
         }
     }
