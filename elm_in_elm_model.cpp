@@ -1,5 +1,9 @@
 #include "elm_in_elm_model.h"
 
+ELM_IN_ELM_Model::ELM_IN_ELM_Model()
+{
+    
+}
 ELM_IN_ELM_Model::ELM_IN_ELM_Model(const int n_models, const std::string modelDir)
 {
     m_n_models = n_models;
@@ -25,63 +29,78 @@ void ELM_IN_ELM_Model::setSubModelHiddenNodes(const int modelId, const int n_nod
 }
 
 void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float trainSampleRatio, 
-                                           const int resizeWidth, const int resizeHeight, const int channels, 
-                                           bool validate, bool shuffle)
+                                           const int resizeWidth, const int resizeHeight, const int channels, bool shuffle)
 {
     m_trainSampleRatio = trainSampleRatio;
     m_width = resizeWidth;
     m_height = resizeHeight;
     m_channels = channels;
-    m_validate = validate;
-    m_shuffle = shuffle;
     
     inputImgsFrom(path,m_label_string,m_trainImgs,
                   m_testImgs,m_trainLabelBins,m_testLabelBins,
-                  m_trainSampleRatio,m_channels,m_validate,m_shuffle);
+                  m_trainSampleRatio,m_channels,shuffle);
     m_Q = m_trainImgs.size();
-    
-    m_subModelToTrain.inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
-    if(validate)
-        m_subModelToTrain.inputData_2d_test(m_testImgs,m_testLabelBins);
 }
 
-void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool validate, bool shuffle)
+void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool shuffle)
 {
     loadMnistData_csv(path,trainSampleRatio,
-                      m_trainImgs,m_testImgs,m_trainLabelBins,m_testLabelBins,validate,shuffle);
+                      m_trainImgs,m_testImgs,m_trainLabelBins,m_testLabelBins,shuffle);
     
     m_Q = m_trainImgs.size();
     
-    m_subModelToTrain.inputData_2d(m_trainImgs,m_trainLabelBins,28,28,1);
-    if(validate)
-        m_subModelToTrain.inputData_2d_test(m_testImgs,m_testLabelBins);
+    m_width = 28;
+    m_height = 28;
+    m_channels = 1;
 }
 
 void ELM_IN_ELM_Model::fitSubModels(int batchSize)
 {
-    int randomState = (unsigned)time(NULL);
-    
-    //训练子模型
-    for(int i=0;i<m_n_models;i++)
+    if(m_subModels.empty())
     {
-        if(m_subModelHiddenNodes[i] != -1)
-            m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
-        m_subModelToTrain.setRandomState(randomState++);
-        m_subModelToTrain.fit(batchSize);
-        m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml",
-                               m_modelPath+"subK"+std::to_string(i)+".xml");
+        m_subModelToTrain.inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
+        m_subModelToTrain.inputData_2d_test(m_testImgs,m_testLabelBins);
         
-        m_subModelToTrain.clear();
+        int randomState = (unsigned)time(NULL);
+        
+        //训练子模型
+        for(int i=0;i<m_n_models;i++)
+        {
+            if(m_subModelHiddenNodes[i] != -1)
+                m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
+            m_subModelToTrain.setRandomState(randomState++);
+            m_subModelToTrain.fit(batchSize);
+            m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml",
+                                   m_modelPath+"subK"+std::to_string(i)+".xml");
+            
+            m_subModelToTrain.clear();
+        }
+    }
+    else
+    {
+        for(int i=0;i<m_n_models;i++)
+        {
+            m_subModels[i].inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
+            m_subModels[i].inputData_2d_test(m_testImgs,m_testLabelBins);
+            
+            m_subModels[i].fit(batchSize);
+            
+            m_subModels[i].save(m_modelPath+"subModel"+std::to_string(i)+".xml",
+                                   m_modelPath+"subK"+std::to_string(i)+".xml");
+        }
     }
 }
 
 void ELM_IN_ELM_Model::fitMainModel(int batchSize)
 {
     //载入子模型
-    m_subModels.resize(m_n_models);
-    for(int i=0;i<m_n_models;i++)
-        m_subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml",
-                          m_modelPath+"subK"+std::to_string(i)+".xml");
+    if(m_subModels.empty())
+    {
+        m_subModels.resize(m_n_models);
+        for(int i=0;i<m_n_models;i++)
+            m_subModels[i].load(m_modelPath+"subModel"+std::to_string(i)+".xml",
+                              m_modelPath+"subK"+std::to_string(i)+".xml");
+    }
     
     //为H和T分配空间
     int M = m_n_models;
@@ -197,10 +216,18 @@ void ELM_IN_ELM_Model::save()
     fswrite<<"label_string"<<m_label_string;
     
     fswrite.release();
+    
+    cv::FileStorage K_fswrite(m_modelPath+"mainK.xml",cv::FileStorage::WRITE);
+    K_fswrite<<"K"<<m_K;
+    K_fswrite.release();
 }
 
-void ELM_IN_ELM_Model::load()
+void ELM_IN_ELM_Model::load(std::string modelDir)
 {
+    m_modelPath = modelDir;
+    if(m_modelPath[m_modelPath.length()-1] != '/')
+        m_modelPath.append("/");
+    
     cv::FileStorage fsread(m_modelPath+"mainModel.xml",cv::FileStorage::READ);
 
     fsread["n_models"]>>m_n_models;
@@ -211,10 +238,15 @@ void ELM_IN_ELM_Model::load()
     fsread["label_string"]>>m_label_string;
 
     fsread.release();
+    
+    cv::FileStorage K_fsread(m_modelPath+"mainK.xml",cv::FileStorage::READ);
+    K_fsread["K"]>>m_K;
+    K_fsread.release();
 
     m_subModels.resize(m_n_models);
     for(int m=0;m<m_n_models;m++)
-        m_subModels[m].load(m_modelPath+"subModel"+std::to_string(m)+".xml");
+        m_subModels[m].load(m_modelPath+"subModel"+std::to_string(m)+".xml",
+                            m_modelPath+"subK"+std::to_string(m)+".xml");
 }
 
 void ELM_IN_ELM_Model::query(const cv::Mat &mat, std::string &label)

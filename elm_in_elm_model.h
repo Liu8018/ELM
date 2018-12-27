@@ -6,35 +6,35 @@
 class ELM_IN_ELM_Model
 {
 public:
+    ELM_IN_ELM_Model();
     ELM_IN_ELM_Model(const int n_models,const std::string modelDir);
     
     void setSubModelHiddenNodes(const int modelId, const int n_nodes);
     
     void loadStandardDataset(const std::string path, const float trainSampleRatio,
                              const int resizeWidth, const int resizeHeight, 
-                             const int channels, bool validate=true,bool shuffle=true);
+                             const int channels, bool shuffle=true);
     
-    void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
+    void loadMnistData(const std::string path, const float trainSampleRatio, bool shuffle=true);
     
     void fitSubModels(int batchSize = -1);
-    void fitMainModel(int batchSize=-1);
+    void fitMainModel(int batchSize = -1);
     
     void save();
-    void load();
+    void load(std::string modelDir);
     
     void query(const cv::Mat &mat, std::string &label);
+    
+    //计算在测试数据上的准确率
+    void validate();
     
 private:
     int m_n_models;
     std::vector<int> m_subModelHiddenNodes;
     
-    bool m_validate;
-    
     ELM_Model m_subModelToTrain;
     
     std::vector<ELM_Model> m_subModels;
-    
-    bool m_shuffle;
     
     std::string m_modelPath;
     int m_width;
@@ -54,9 +54,6 @@ private:
     std::vector<cv::Mat> m_testImgs;
     std::vector<std::vector<bool>> m_trainLabelBins;
     std::vector<std::vector<bool>> m_testLabelBins;
-    
-    //计算在测试数据上的准确率
-    void validate();
     
 };
 

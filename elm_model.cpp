@@ -70,18 +70,17 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
     normalize_img(m_inputLayerData_test);
 }
 
-void ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool validate, bool shuffle)
+void ELM_Model::loadMnistData(const std::string path, const float trainSampleRatio, bool shuffle)
 {
     std::vector<cv::Mat> trainImgs;
     std::vector<cv::Mat> testImgs;
     
     std::vector<std::vector<bool>> trainLabelBins;
     std::vector<std::vector<bool>> testLabelBins;
-    loadMnistData_csv(path,trainSampleRatio,trainImgs,testImgs,trainLabelBins,testLabelBins,validate,shuffle);
+    loadMnistData_csv(path,trainSampleRatio,trainImgs,testImgs,trainLabelBins,testLabelBins,shuffle);
     
     inputData_2d(trainImgs,trainLabelBins,28,28,1);
-    if(validate)
-        inputData_2d_test(testImgs,testLabelBins);
+    inputData_2d_test(testImgs,testLabelBins);
 }
 
 void ELM_Model::setHiddenNodes(const int hiddenNodes)
@@ -307,7 +306,7 @@ void ELM_Model::load(std::string path, std::string K_path)
 
 void ELM_Model::loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
                                     const int resizeWidth, const int resizeHeight, 
-                                    const int channels, bool validate, bool shuffle)
+                                    const int channels, bool shuffle)
 {
     m_channels = channels;
     
@@ -317,10 +316,8 @@ void ELM_Model::loadStandardDataset(const std::string datasetPath, const float t
     std::vector<std::vector<bool>> trainLabelBins;
     std::vector<std::vector<bool>> testLabelBins;
     
-    inputImgsFrom(datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,trainSampleRatio,channels,validate,shuffle);
+    inputImgsFrom(datasetPath,m_label_string,trainImgs,testImgs,trainLabelBins,testLabelBins,trainSampleRatio,channels,shuffle);
 
     inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
-    
-    if(validate)
-        inputData_2d_test(testImgs,testLabelBins);
+    inputData_2d_test(testImgs,testLabelBins);
 }

@@ -34,12 +34,14 @@ public:
     
     void loadStandardDataset(const std::string datasetPath, const float trainSampleRatio,
                              const int resizeWidth, const int resizeHeight, 
-                             const int channels, bool validate=true, bool shuffle=true);
+                             const int channels, bool shuffle=true);
     
-    void loadMnistData(const std::string path, const float trainSampleRatio, bool validate=true, bool shuffle=true);
+    void loadMnistData(const std::string path, const float trainSampleRatio, bool shuffle=true);
     
     void clear();
     
+    //计算在测试数据上的准确率
+    void validate();
 private:
     int m_randomState;
     
@@ -77,9 +79,6 @@ private:
     int m_Q_test;
     cv::Mat m_Target_test;
     cv::Mat m_inputLayerData_test;
-    
-    //计算在测试数据上的准确率
-    void validate();
 };
 
 #endif // ELM_MODEL_H

@@ -6,7 +6,7 @@ void inputImgsFrom(const std::string datasetPath,
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
                    std::vector<std::vector<bool> > &testLabelBins, 
-                   const float trainSampleRatio, const int channels, bool validate, bool shuffle)
+                   const float trainSampleRatio, const int channels, bool shuffle)
 {
     std::vector<std::string> files;
     traverseFile(datasetPath,files);
@@ -47,21 +47,20 @@ void inputImgsFrom(const std::string datasetPath,
                 trainLabelBins.push_back(labelBin);
             }
             
-            if(validate)
-                for(int j=trainSamples;j<subdir_files.size();j++)
-                {
-                    cv::Mat src;
-                    if(channels == 3)
-                        src = cv::imread(subdir_files[j]);
-                    if(channels == 1)
-                        src = cv::imread(subdir_files[j],0);
-                    
-                    testImgs.push_back(src);
-                    
-                    std::vector<bool> labelBin(classes,0);
-                    labelBin[i] = 1;
-                    testLabelBins.push_back(labelBin);
-                }
+            for(int j=trainSamples;j<subdir_files.size();j++)
+            {
+                cv::Mat src;
+                if(channels == 3)
+                    src = cv::imread(subdir_files[j]);
+                if(channels == 1)
+                    src = cv::imread(subdir_files[j],0);
+                
+                testImgs.push_back(src);
+                
+                std::vector<bool> labelBin(classes,0);
+                labelBin[i] = 1;
+                testLabelBins.push_back(labelBin);
+            }
         }
     }
 }
@@ -69,8 +68,7 @@ void inputImgsFrom(const std::string datasetPath,
 void loadMnistData_csv(const std::string path, const float trainSampleRatio,
                    std::vector<cv::Mat> &trainImgs, std::vector<cv::Mat> &testImgs, 
                    std::vector<std::vector<bool> > &trainLabelBins, 
-                   std::vector<std::vector<bool> > &testLabelBins, 
-                   bool validate, bool shuffle)
+                   std::vector<std::vector<bool> > &testLabelBins, bool shuffle)
 {
     std::ifstream fin(path);
     
@@ -124,9 +122,6 @@ void loadMnistData_csv(const std::string path, const float trainSampleRatio,
         
         trainImgs.push_back(img);
     }
-    
-    if(!validate)
-        return;
     
     for(int j=trainSize;j<lines.size();j++)
     {
