@@ -22,7 +22,7 @@ public:
     void setActivation(const std::string method);
     
     //训练
-    void fit(int batchSize = -1);
+    void fit(int batchSize = -1, bool validate = true);
     
     //查询
     void query(const cv::Mat &mat, std::string &label);

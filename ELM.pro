@@ -9,9 +9,9 @@ SOURCES += \
     elm_in_elm_model.cpp \
     functions.cpp
 
-LIBS += /usr/lib64/libopencv_core.so \      #核心部分
+LIBS += /usr/lib64/libopencv_core.so \ 
         /usr/lib64/libopencv_imgproc.so \
-        /usr/lib64/libopencv_highgui.so \    #测试用
+        /usr/lib64/libopencv_highgui.so \
         /usr/lib64/libopencv_imgcodecs.so
 
 HEADERS += \

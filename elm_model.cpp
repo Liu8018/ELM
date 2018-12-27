@@ -98,7 +98,7 @@ void ELM_Model::setRandomState(int randomState)
     m_randomState = randomState;
 }
 
-void ELM_Model::fit(int batchSize)
+void ELM_Model::fit(int batchSize, bool validate)
 {
     //检查隐藏层节点数是否被设置
     if(m_H == -1)
@@ -182,7 +182,8 @@ void ELM_Model::fit(int batchSize)
             std::cout<<"Score on batch training data:"<<score<<std::endl;
             
             //计算在测试数据上的准确率
-            validate();
+            if(validate)
+                validate();
         }
     }
     
