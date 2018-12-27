@@ -54,7 +54,7 @@ int main()
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
     model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,2000);
+        model.setSubModelHiddenNodes(n,5000);
     model.fitSubModels(30000);
     model.fitMainModel(30000);
     
