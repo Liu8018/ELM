@@ -17,8 +17,8 @@ public:
     
     void loadMnistData(const std::string path, const float trainSampleRatio, bool shuffle=true);
     
-    void fitSubModels(int batchSize = -1);
-    void fitMainModel(int batchSize = -1);
+    void fitSubModels(int batchSize = -1, bool validating = true);
+    void fitMainModel(int batchSize = -1, bool validating = true);
     
     void save();
     void load(std::string modelDir);
@@ -26,9 +26,9 @@ public:
     void query(const cv::Mat &mat, std::string &label);
     
     //计算在测试数据上的准确率
-    void validate();
+    float validate();
     
-    void greedyFitWhole();
+    void init_greedyFitWhole(int g);
     
 private:
     int m_n_models;

@@ -51,28 +51,28 @@ int main()
     model.save();*/
     
     
-    int n_model = 100;
+    /*int n_model = 5;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,500);
-    model.fitSubModels();
-    model.fitMainModel();
-    
-    model.save();
-    
-    
-    /*ELM_IN_ELM_Model model;
-    model.load("/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.1);
+        model.setSubModelHiddenNodes(n,80);
     model.fitSubModels();
     model.fitMainModel();
     model.save();*/
     
-    ELM_IN_ELM_Model model2;
-    model2.load("/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model2.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0);
-    model2.validate();
+    
+    //ELM_IN_ELM_Model model2;
+    //model2.load("/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    //model2.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0);
+    //model2.validate();
+    
+    int n_model = 5;
+    ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    for(int n=0;n<n_model;n++)
+        model.setSubModelHiddenNodes(n,80);
+    model.init_greedyFitWhole(10);
+    
     
     return 0;
 }

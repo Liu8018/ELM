@@ -54,7 +54,7 @@ void ELM_IN_ELM_Model::loadMnistData(const std::string path, const float trainSa
     m_channels = 1;
 }
 
-void ELM_IN_ELM_Model::fitSubModels(int batchSize)
+void ELM_IN_ELM_Model::fitSubModels(int batchSize, bool validating)
 {
     if(m_subModels.empty())
     {
@@ -69,7 +69,7 @@ void ELM_IN_ELM_Model::fitSubModels(int batchSize)
             if(m_subModelHiddenNodes[i] != -1)
                 m_subModelToTrain.setHiddenNodes(m_subModelHiddenNodes[i]);
             m_subModelToTrain.setRandomState(randomState++);
-            m_subModelToTrain.fit(batchSize);
+            m_subModelToTrain.fit(batchSize, validating);
             m_subModelToTrain.save(m_modelPath+"subModel"+std::to_string(i)+".xml",
                                    m_modelPath+"subK"+std::to_string(i)+".xml");
             
@@ -83,7 +83,7 @@ void ELM_IN_ELM_Model::fitSubModels(int batchSize)
             m_subModels[i].inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
             m_subModels[i].inputData_2d_test(m_testImgs,m_testLabelBins);
             
-            m_subModels[i].fit(batchSize);
+            m_subModels[i].fit(batchSize, validating);
             
             m_subModels[i].save(m_modelPath+"subModel"+std::to_string(i)+".xml",
                                    m_modelPath+"subK"+std::to_string(i)+".xml");
@@ -91,7 +91,7 @@ void ELM_IN_ELM_Model::fitSubModels(int batchSize)
     }
 }
 
-void ELM_IN_ELM_Model::fitMainModel(int batchSize)
+void ELM_IN_ELM_Model::fitMainModel(int batchSize, bool validating)
 {
     //载入子模型
     if(m_subModels.empty())
@@ -128,9 +128,11 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize)
         m_F = cv::Scalar(0);
     }
     
+std::cout<<"test1"<<std::endl;
     int trainedRatio = 0;
     for(int i=0;i+batchSize<=m_Q;i+=batchSize)
     {
+std::cout<<"test2"<<std::endl;
         std::vector<cv::Mat> batchMats(m_trainImgs.begin()+i,m_trainImgs.begin()+i+batchSize);
 
         //为H和T赋值
@@ -141,11 +143,13 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize)
         }
         label2target(m_trainLabelBins,T);
 
+std::cout<<"test3"<<std::endl;
         //迭代更新K
         m_K = m_K + H.t() * H;
         //迭代更新F
         m_F = m_F + m_K.inv(1) * H.t() * (T - H*m_F);
 
+std::cout<<"test4"<<std::endl;
         //输出信息
         int ratio = (i+batchSize)/(float)m_Q*100;
         if( ratio - trainedRatio >= 1)
@@ -162,7 +166,8 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize)
             std::cout<<"Score on batch training data:"<<score<<std::endl;
             
             //计算在测试数据上的准确率
-            validate();
+            if(validating)
+                validate();
         }
     }
 /*std::cout<<"T:"<<T.size<<"\n"<<T<<std::endl;
@@ -172,7 +177,51 @@ std::cout<<"H*F:"<<realOutput.size<<"\n"<<H*m_F<<std::endl;
 */
 }
 
-void ELM_IN_ELM_Model::validate()
+void ELM_IN_ELM_Model::init_greedyFitWhole(int g)
+{
+    int n_models = m_n_models;
+    m_subModels.clear();
+    
+    ELM_Model subModel;
+    subModel.inputData_2d(m_trainImgs,m_trainLabelBins,m_width,m_height,m_channels);
+    subModel.inputData_2d_test(m_testImgs,m_testLabelBins);
+    
+    float maxScore = 0;
+    for(int n=1;n<=n_models;n++)
+    {
+        m_n_models = n;
+        m_subModels.resize(n);
+        
+        subModel.setHiddenNodes(m_subModelHiddenNodes[n-1]);
+        
+        ELM_Model maxSubModel;
+
+        for(int i=0;i<g;i++)
+        {
+            subModel.fit(-1,false);
+            m_subModels[n-1] = subModel;
+            fitMainModel(-1,false);
+            
+            float score = validate();
+            if(score > maxScore)
+            {
+                std::cout<<"g score:"<<score<<std::endl;
+                maxScore = score;
+                maxSubModel = subModel;
+            }
+            
+            subModel.clear();
+            m_K.release();
+            m_F.release();
+        }
+        
+        m_subModels[n-1] = maxSubModel;
+    }
+    
+    std::cout<<"final score:"<<maxScore<<std::endl;
+}
+
+float ELM_IN_ELM_Model::validate()
 {
     int M = m_n_models;
     
@@ -192,6 +241,7 @@ void ELM_IN_ELM_Model::validate()
     float finalScore_test = calcScore(output,T_test);
     
     std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
+    return finalScore_test;
 }
 
 void ELM_IN_ELM_Model::save()

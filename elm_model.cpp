@@ -184,7 +184,7 @@ void ELM_Model::fit(int batchSize, bool validating)
 //std::cout<<"test:\n"<<m_H_output * m_W_HO<<"\n"<<m_Target<<std::endl;
 }
 
-void ELM_Model::validate()
+float ELM_Model::validate()
 {
     //计算在测试数据上的准确率
     if(!m_inputLayerData_test.empty())
@@ -200,6 +200,7 @@ void ELM_Model::validate()
         float finalScore_test = calcScore(output,m_Target_test);
         
         std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
+        return finalScore_test;
     }
 }
 

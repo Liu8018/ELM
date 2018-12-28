@@ -42,7 +42,7 @@ public:
     void clear();
     
     //计算在测试数据上的准确率
-    void validate();
+    float validate();
 private:
     int m_randomState;
     
