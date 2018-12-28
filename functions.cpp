@@ -190,6 +190,15 @@ void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels)
     }
 }
 
+void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int channels)
+{
+    for(int i=0;i<mats.size();i++)
+    {
+        cv::Mat lineROI = output(cv::Range(i,i+1),cv::Range(0,output.cols));
+        mat2line(mats[i],lineROI, channels);
+    }
+};
+
 //转化label为target
 //从QxC到QxC
 void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target)

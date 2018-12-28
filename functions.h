@@ -29,6 +29,7 @@ void loadMnistData_csv(const std::string path, const float trainSampleRatio,
 
 //二维数据转换为一维(从AxB到1xAB)
 void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels);
+void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int channels);
 
 //转化label为target(从QxC到QxC)
 void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target);

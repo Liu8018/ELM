@@ -19,7 +19,7 @@ void ELM_Model::clear()
     m_K.release();
 }
 
-void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
+void ELM_Model::inputData_2d(std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
                              const int resizeWidth, const int resizeHeight, const int channels)
 {
     m_channels = channels;
@@ -38,13 +38,8 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
     
     m_inputLayerData.create(cv::Size(m_I,m_Q),CV_32F);
     for(int i=0;i<mats.size();i++)
-    {
-        cv::Mat img;
-        cv::resize(mats[i],img,cv::Size(m_width,m_height));
-        
-        cv::Mat lineROI = m_inputLayerData(cv::Range(i,i+1),cv::Range(0,m_inputLayerData.cols));
-        mat2line(img,lineROI, m_channels);
-    }
+        cv::resize(mats[i],mats[i],cv::Size(m_width,m_height));
+    mats2lines(mats,m_inputLayerData,m_channels);
     normalize_img(m_inputLayerData);
     
 //std::cout<<"m_Target:\n"<<m_Target<<std::endl;
@@ -52,7 +47,7 @@ void ELM_Model::inputData_2d(const std::vector<cv::Mat> &mats, const std::vector
 
 }
 
-void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool> > &labels)
+void ELM_Model::inputData_2d_test(std::vector<cv::Mat> &mats, const std::vector<std::vector<bool> > &labels)
 {
     m_Q_test = mats.size();
     
@@ -60,13 +55,8 @@ void ELM_Model::inputData_2d_test(const std::vector<cv::Mat> &mats, const std::v
     
     m_inputLayerData_test.create(cv::Size(m_I,m_Q_test),CV_32F);
     for(int i=0;i<mats.size();i++)
-    {
-        cv::Mat img;
-        cv::resize(mats[i],img,cv::Size(m_width,m_height));
-        
-        cv::Mat lineROI = m_inputLayerData_test(cv::Range(i,i+1),cv::Range(0,m_inputLayerData_test.cols));
-        mat2line(img,lineROI, m_channels);
-    }
+        cv::resize(mats[i],mats[i],cv::Size(m_width,m_height));
+    mats2lines(mats,m_inputLayerData_test,m_channels);
     normalize_img(m_inputLayerData_test);
 }
 
@@ -98,7 +88,7 @@ void ELM_Model::setRandomState(int randomState)
     m_randomState = randomState;
 }
 
-void ELM_Model::fit(int batchSize, bool validate)
+void ELM_Model::fit(int batchSize, bool validating)
 {
     //检查隐藏层节点数是否被设置
     if(m_H == -1)
@@ -182,7 +172,7 @@ void ELM_Model::fit(int batchSize, bool validate)
             std::cout<<"Score on batch training data:"<<score<<std::endl;
             
             //计算在测试数据上的准确率
-            if(validate)
+            if(validating)
                 validate();
         }
     }
@@ -257,6 +247,22 @@ void ELM_Model::query(const cv::Mat &mat, cv::Mat &output)
     
     //计算输出
     output = H * m_W_HO;
+}
+
+void ELM_Model::batchQuery(std::vector<cv::Mat> &inputMats, cv::Mat &outputMat)
+{
+    for(int i=0;i<inputMats.size();i++)
+        cv::resize(inputMats[i],inputMats[i],cv::Size(m_width,m_height));
+    
+    cv::Mat inputLayerData(cv::Size(m_width*m_height*m_channels,inputMats.size()),CV_32F);
+    mats2lines(inputMats,inputLayerData,m_channels);
+    normalize_img(inputLayerData);
+
+    cv::Mat H = inputLayerData * m_W_IH;
+    addBias(H,m_B_H);
+    activate(H,m_activationMethod);
+
+    outputMat = H * m_W_HO;
 }
 
 void ELM_Model::save(std::string path, std::string K_path)

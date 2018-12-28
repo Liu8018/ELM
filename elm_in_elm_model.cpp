@@ -131,25 +131,21 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize)
     int trainedRatio = 0;
     for(int i=0;i+batchSize<=m_Q;i+=batchSize)
     {
+        std::vector<cv::Mat> batchMats(m_trainImgs.begin()+i,m_trainImgs.begin()+i+batchSize);
+
         //为H和T赋值
-        for(int q=0;q<batchSize;q++)
+        for(int m=0;m<m_n_models;m++)
         {
-            for(int m=0;m<M;m++)
-            {
-                cv::Mat ROI = H(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
-                m_subModels[m].query(m_trainImgs[i+q],ROI);
-                normalize(ROI);
-            }
-            
-            for(int c=0;c<m_C;c++)
-                T.at<float>(q,c) = float(m_trainLabelBins[i+q][c]);
+            cv::Mat ROI = H(cv::Range(0,batchSize),cv::Range(m*m_C,(m+1)*m_C));
+            m_subModels[m].batchQuery(batchMats,ROI);
         }
-        
+        label2target(m_trainLabelBins,T);
+
         //迭代更新K
         m_K = m_K + H.t() * H;
         //迭代更新F
         m_F = m_F + m_K.inv(1) * H.t() * (T - H*m_F);
-        
+
         //输出信息
         int ratio = (i+batchSize)/(float)m_Q*100;
         if( ratio - trainedRatio >= 1)
@@ -184,18 +180,12 @@ void ELM_IN_ELM_Model::validate()
     cv::Mat T_test(cv::Size(m_C,m_testImgs.size()),CV_32F);
     
     //给H_test和T_test赋值
-    for(int q=0;q<m_testImgs.size();q++)
+    for(int m=0;m<m_n_models;m++)
     {
-        for(int m=0;m<M;m++)
-        {
-            cv::Mat ROI = H_test(cv::Range(q,q+1),cv::Range(m*m_C,(m+1)*m_C));
-            m_subModels[m].query(m_testImgs[q],ROI);
-            normalize(ROI);
-        }
-        
-        for(int c=0;c<m_C;c++)
-            T_test.at<float>(q,c) = float(m_testLabelBins[q][c]);
+        cv::Mat ROI = H_test(cv::Range(0,m_testImgs.size()),cv::Range(m*m_C,(m+1)*m_C));
+        m_subModels[m].batchQuery(m_testImgs,ROI);
     }
+    label2target(m_testLabelBins,T_test);
     
     //计算
     cv::Mat output = H_test * m_F;

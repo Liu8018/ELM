@@ -15,18 +15,19 @@ public:
     //设置随机种子
     void setRandomState(int randomState);
     //输入二维数据
-    void inputData_2d(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
+    void inputData_2d(std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels, 
                       const int resizeWidth, const int resizeHeight, const int channels);
-    void inputData_2d_test(const std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels);
+    void inputData_2d_test(std::vector<cv::Mat> &mats, const std::vector<std::vector<bool>> &labels);
     //设置激活函数
     void setActivation(const std::string method);
     
     //训练
-    void fit(int batchSize = -1, bool validate = true);
+    void fit(int batchSize = -1, bool validating = true);
     
     //查询
     void query(const cv::Mat &mat, std::string &label);
     void query(const cv::Mat &mat, cv::Mat &output);
+    void batchQuery(std::vector<cv::Mat> &inputMats, cv::Mat &outputMat);
     
     //保存和读取模型
     void save(std::string path, std::string K_path="");
