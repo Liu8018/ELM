@@ -192,6 +192,8 @@ void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels)
 
 void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int channels)
 {
+    output.create(cv::Size(mats[0].rows*mats[0].cols*channels,mats.size()),CV_32F);
+    
     for(int i=0;i<mats.size();i++)
     {
         cv::Mat lineROI = output(cv::Range(i,i+1),cv::Range(0,output.cols));
@@ -210,6 +212,13 @@ void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target)
         for(int j=0;j<labelLength;j++)
             target.at<float>(i,j) = float(labels[i][j]);
     }
+}
+
+void addBias(cv::Mat &mat, const cv::Mat &bias)
+{
+    for(int i=0;i<mat.rows;i++)
+        for(int j=0;j<mat.cols;j++)
+            mat.at<float>(i,j) += bias.at<float>(0,j);
 }
 
 void activate(cv::Mat &H, const std::string method)
@@ -298,4 +307,18 @@ std::cout<<"size:"<<outputData.rows<<std::endl;
     float finalScore = score/(float)outputData.rows;
     
     return finalScore;
+}
+
+void randomGenerate(cv::Mat &mat, cv::Size size, int randomState)
+{
+    mat.create(size,CV_32F);
+    
+    cv::RNG rng;
+    if(randomState != -1)
+        rng.state = randomState;
+    else
+        rng.state = (unsigned)time(NULL);
+    for(int i=0;i<mat.rows;i++)
+        for(int j=0;j<mat.cols;j++)
+            mat.at<float>(i,j) = rng.uniform(-1.0,1.0);
 }

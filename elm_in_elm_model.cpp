@@ -31,14 +31,13 @@ void ELM_IN_ELM_Model::setSubModelHiddenNodes(const int modelId, const int n_nod
 void ELM_IN_ELM_Model::loadStandardDataset(const std::string path, const float trainSampleRatio, 
                                            const int resizeWidth, const int resizeHeight, const int channels, bool shuffle)
 {
-    m_trainSampleRatio = trainSampleRatio;
     m_width = resizeWidth;
     m_height = resizeHeight;
     m_channels = channels;
     
     inputImgsFrom(path,m_label_string,m_trainImgs,
                   m_testImgs,m_trainLabelBins,m_testLabelBins,
-                  m_trainSampleRatio,m_channels,shuffle);
+                  trainSampleRatio,m_channels,shuffle);
     m_Q = m_trainImgs.size();
 }
 
@@ -128,11 +127,9 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize, bool validating)
         m_F = cv::Scalar(0);
     }
     
-std::cout<<"test1"<<std::endl;
     int trainedRatio = 0;
     for(int i=0;i+batchSize<=m_Q;i+=batchSize)
     {
-std::cout<<"test2"<<std::endl;
         std::vector<cv::Mat> batchMats(m_trainImgs.begin()+i,m_trainImgs.begin()+i+batchSize);
 
         //为H和T赋值
@@ -143,13 +140,11 @@ std::cout<<"test2"<<std::endl;
         }
         label2target(m_trainLabelBins,T);
 
-std::cout<<"test3"<<std::endl;
         //迭代更新K
         m_K = m_K + H.t() * H;
         //迭代更新F
         m_F = m_F + m_K.inv(1) * H.t() * (T - H*m_F);
 
-std::cout<<"test4"<<std::endl;
         //输出信息
         int ratio = (i+batchSize)/(float)m_Q*100;
         if( ratio - trainedRatio >= 1)

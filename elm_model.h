@@ -43,6 +43,9 @@ public:
     
     //计算在测试数据上的准确率
     float validate();
+    
+    //自编码
+    void autoEncode(cv::Mat &mat, int n_hiddenNodes, cv::Mat &W);
 private:
     int m_randomState;
     
@@ -62,11 +65,8 @@ private:
     //偏置
     cv::Mat m_B_H;      //1×m_H
     
-    //在线序列学习中用到的，保留了历史数据的一个矩阵。等于(H的转置)*H
+    //在线序列学习中用到的，保留了历史数据的一个矩阵。等于 H的转置*H
     cv::Mat m_K;
-    
-    //加偏置
-    void addBias(cv::Mat &mat, const cv::Mat &bias);
     
     std::string m_activationMethod;
     std::string m_defaultActivationMethod;

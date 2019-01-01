@@ -1,3 +1,4 @@
+
 TEMPLATE = app
 CONFIG += console c++11
 CONFIG -= app_bundle
@@ -7,6 +8,7 @@ SOURCES += \
         main.cpp \
     elm_model.cpp \
     elm_in_elm_model.cpp \
+    delm_model.cpp \
     functions.cpp
 
 LIBS += /usr/lib64/libopencv_core.so \ 
@@ -17,4 +19,5 @@ LIBS += /usr/lib64/libopencv_core.so \
 HEADERS += \
     elm_model.h \
     elm_in_elm_model.h \
-    functions.h
+    functions.h \
+    delm_model.h

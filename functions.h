@@ -34,8 +34,14 @@ void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int cha
 //转化label为target(从QxC到QxC)
 void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target);
 
+//随机生成矩阵
+void randomGenerate(cv::Mat &mat, cv::Size size, int randomState=-1);
+
 //激活
 void activate(cv::Mat &H, const std::string method);
+
+//加偏置
+void addBias(cv::Mat &mat, const cv::Mat &bias);
 
 //激活函数sigmoid
 void sigmoid(cv::Mat &H);
@@ -47,6 +53,8 @@ void normalize_img(cv::Mat &mat);
 //遍历一个目录
 void traverseFile(const std::string directory, std::vector<std::string> &files);
 
+//找最大值
 int getMaxId(const cv::Mat &line);
 
+//计分
 float calcScore(const cv::Mat &outputData, const cv::Mat &target);

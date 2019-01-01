@@ -1,46 +1,7 @@
-#include "elm_in_elm_model.h"
+#include "delm_model.h"
 
 int main()
 {
-    /*cv::Mat mat(6,6,CV_32F,cv::Scalar(1));
-    mat.at<float>(0,4) = 3;
-    mat.at<float>(2,3) = 4;
-    mat.at<float>(4,2) = 5;
-    mat.at<float>(5,1) = 6;
-    mat.at<float>(1,2) = 7;
-    mat.at<float>(3,3) = 4;
-    mat.at<float>(2,4) = 2;
-    mat.at<float>(5,5) = 1;
-    
-    std::cout<<"src:\n"<<mat<<std::endl;
-    
-    ELM_CNN_Model model;
-    model.test(mat,mat);
-    
-    std::cout<<"dst:\n"<<mat<<std::endl;
-    */
-/*
-    //加载ELM_IN_ELM模型
-    ELM_IN_ELM_Model model(100,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.load();
-    
-    cv::Mat src = cv::imread("/home/liu/下载/cnn-keras/examples/squirtle_plush.png",0);
-    std::string label;
-    float runtime = cv::getTickCount();
-    model.query(src,label);
-    runtime = (cv::getTickCount()-runtime)/cv::getTickFrequency();
-    std::cout<<label<<std::endl;
-    std::cout<<runtime<<"s"<<std::endl;
-    
-    src = cv::imread("/home/liu/下载/cnn-keras/examples/pikachu_toy.png",0);
-    runtime = cv::getTickCount();
-    model.query(src,label);
-    runtime = (cv::getTickCount()-runtime)/cv::getTickFrequency();
-    std::cout<<label<<std::endl;
-    std::cout<<runtime<<"s"<<std::endl;
-*/
-    
-
     //训练ELM_IN_ELM模型
     /*ELM_IN_ELM_Model model(80,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
     model.loadStandardDataset("/run/media/liu/D/linux-windows/dataset/口袋妖怪", 0.6,30,30,3,true,false);
@@ -51,14 +12,14 @@ int main()
     model.save();*/
     
     
-    /*int n_model = 5;
+    /*int n_model = 512;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,80);
+        model.setSubModelHiddenNodes(n,8);
     model.fitSubModels();
-    model.fitMainModel();
-    model.save();*/
+    model.fitMainModel();*/
+    //model.save();
     
     
     //ELM_IN_ELM_Model model2;
@@ -66,13 +27,30 @@ int main()
     //model2.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0);
     //model2.validate();
     
-    int n_model = 5;
+    //贪婪法训练
+    /*int n_model = 5;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
     model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
     for(int n=0;n<n_model;n++)
         model.setSubModelHiddenNodes(n,80);
-    model.init_greedyFitWhole(10);
+    model.init_greedyFitWhole(3);*/
     
+    /*ELM_Model model;
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    model.setHiddenNodes(200);
+    model.fit();*/
+    
+    int n_hiddenLayer = 3;
+    std::vector<int> hiddenNodes(n_hiddenLayer,20);
+    //hiddenNodes.push_back(1024);
+    //hiddenNodes.push_back(512);
+    //hiddenNodes.push_back(256);
+    //hiddenNodes.push_back(128);
+    //hiddenNodes.push_back(64);
+    
+    DELM_Model model(n_hiddenLayer,hiddenNodes);
+    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    model.fit();
     
     return 0;
 }

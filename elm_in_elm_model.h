@@ -41,7 +41,6 @@ private:
     std::string m_modelPath;
     int m_width;
     int m_height;
-    float m_trainSampleRatio;
     int m_channels;
     int m_Q;
     int m_C;

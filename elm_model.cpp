@@ -121,17 +121,14 @@ void ELM_Model::fit(int batchSize, bool validating)
         m_W_HO = cv::Scalar(0);
         
         //随机产生IH权重和H偏置
-        cv::RNG rng;
+        int randomState;
         if(m_randomState != -1)
-            rng.state = m_randomState;
+            randomState = m_randomState;
         else
-            rng.state = (unsigned)time(NULL);
-        for(int i=0;i<m_W_IH.rows;i++)
-            for(int j=0;j<m_W_IH.cols;j++)
-                m_W_IH.at<float>(i,j) = rng.uniform(-1.0,1.0);
-        
-        for(int j=0;j<m_B_H.cols;j++)
-            m_B_H.at<float>(0,j) = rng.uniform(-1.0,1.0);
+            randomState = (unsigned)time(NULL);
+        randomGenerate(m_W_IH,m_W_IH.size(),randomState);
+        randomGenerate(m_B_H,m_B_H.size(),randomState+1);
+        //autoEncode(m_inputLayerData,m_H,m_W_IH); m_W_IH = m_W_IH.t();
     }
     
     int trainedRatio=0;
@@ -202,13 +199,6 @@ float ELM_Model::validate()
         std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
         return finalScore_test;
     }
-}
-
-void ELM_Model::addBias(cv::Mat &mat, const cv::Mat &bias)
-{
-    for(int i=0;i<mat.rows;i++)
-        for(int j=0;j<mat.cols;j++)
-            mat.at<float>(i,j) += bias.at<float>(0,j);
 }
 
 void ELM_Model::query(const cv::Mat &mat, std::string &label)
@@ -328,4 +318,16 @@ void ELM_Model::loadStandardDataset(const std::string datasetPath, const float t
 
     inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
     inputData_2d_test(testImgs,testLabelBins);
+}
+
+void ELM_Model::autoEncode(cv::Mat &mat, int n_hiddenNodes, cv::Mat &W)
+{
+    cv::Mat W0;
+    randomGenerate(W0,cv::Size(n_hiddenNodes,mat.cols));
+    
+    cv::Mat H = mat * W0;
+    
+    W = (H.t()*H).inv(1)*H.t()*mat;
+    
+    //randomGenerate(W,W.size());
 }
