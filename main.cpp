@@ -49,7 +49,7 @@ int main()
     //hiddenNodes.push_back(64);
     
     DELM_Model model(n_hiddenLayer,hiddenNodes);
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
     model.fit();
     
     return 0;

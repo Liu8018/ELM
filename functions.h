@@ -4,12 +4,12 @@
 #endif // FUNCS_H
 
 #include <iostream>
+#include <fstream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <dirent.h>
 #include <algorithm>
-#include <fstream>
 
 //加载图像
 void inputImgsFrom(const std::string datasetPath, 

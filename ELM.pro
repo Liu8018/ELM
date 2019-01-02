@@ -1,4 +1,3 @@
-
 TEMPLATE = app
 CONFIG += console c++11
 CONFIG -= app_bundle
@@ -11,10 +10,13 @@ SOURCES += \
     delm_model.cpp \
     functions.cpp
 
-LIBS += /usr/lib64/libopencv_core.so \ 
-        /usr/lib64/libopencv_imgproc.so \
-        /usr/lib64/libopencv_highgui.so \
-        /usr/lib64/libopencv_imgcodecs.so
+INCLUDEPATH += usr/include\
+               usr/include/opencv \
+               usr/include/opencv2
+LIBS += /usr/lib/x86_64-linux-gnu/libopencv_imgproc.so \
+        /usr/lib/x86_64-linux-gnu/libopencv_highgui.so \
+        /usr/lib/x86_64-linux-gnu/libopencv_core.so \
+        /usr/lib/x86_64-linux-gnu/libopencv_imgcodecs.so
 
 HEADERS += \
     elm_model.h \

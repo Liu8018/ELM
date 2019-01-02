@@ -199,6 +199,8 @@ float ELM_Model::validate()
         std::cout<<"Score on validation data:"<<finalScore_test<<std::endl;
         return finalScore_test;
     }
+    else
+        return 0;
 }
 
 void ELM_Model::query(const cv::Mat &mat, std::string &label)
@@ -328,6 +330,4 @@ void ELM_Model::autoEncode(cv::Mat &mat, int n_hiddenNodes, cv::Mat &W)
     cv::Mat H = mat * W0;
     
     W = (H.t()*H).inv(1)*H.t()*mat;
-    
-    //randomGenerate(W,W.size());
 }
