@@ -115,10 +115,6 @@ void loadMnistData_csv(const std::string path, const float trainSampleRatio,
             
             pixNum++;
         }
-
-        //cv::namedWindow("img",0);
-        //cv::imshow("img",img);
-        //cv::waitKey();
         
         trainImgs.push_back(img);
     }
@@ -154,10 +150,6 @@ void loadMnistData_csv(const std::string path, const float trainSampleRatio,
             
             pixNum++;
         }
-
-        //cv::namedWindow("img",0);
-        //cv::imshow("img",img);
-        //cv::waitKey();
         
         testImgs.push_back(img);
     }
@@ -192,6 +184,9 @@ void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels)
 
 void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int channels)
 {
+    if(mats.empty())
+        return;
+    
     output.create(cv::Size(mats[0].rows*mats[0].cols*channels,mats.size()),CV_32F);
     
     for(int i=0;i<mats.size();i++)
@@ -205,6 +200,9 @@ void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int cha
 //从QxC到QxC
 void label2target(const std::vector<std::vector<bool>> &labels, cv::Mat &target)
 {
+    if(labels.empty())
+        return;
+    
     int labelLength = labels[0].size();
     target.create(cv::Size(labelLength,labels.size()),CV_32F);
     for(int i=0;i<labels.size();i++)

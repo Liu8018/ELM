@@ -128,7 +128,6 @@ void ELM_Model::fit(int batchSize, bool validating)
             randomState = (unsigned)time(NULL);
         randomGenerate(m_W_IH,m_W_IH.size(),randomState);
         randomGenerate(m_B_H,m_B_H.size(),randomState+1);
-        //autoEncode(m_inputLayerData,m_H,m_W_IH); m_W_IH = m_W_IH.t();
     }
     
     int trainedRatio=0;
@@ -320,14 +319,4 @@ void ELM_Model::loadStandardDataset(const std::string datasetPath, const float t
 
     inputData_2d(trainImgs,trainLabelBins,resizeWidth,resizeHeight,channels);
     inputData_2d_test(testImgs,testLabelBins);
-}
-
-void ELM_Model::autoEncode(cv::Mat &mat, int n_hiddenNodes, cv::Mat &W)
-{
-    cv::Mat W0;
-    randomGenerate(W0,cv::Size(n_hiddenNodes,mat.cols));
-    
-    cv::Mat H = mat * W0;
-    
-    W = (H.t()*H).inv(1)*H.t()*mat;
 }

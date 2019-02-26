@@ -1,30 +1,34 @@
-#include "delm_model.h"
+#include "elm_in_elm_model.h"
 
 int main()
 {
-    //训练ELM_IN_ELM模型
-    /*ELM_IN_ELM_Model model(80,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadStandardDataset("/run/media/liu/D/linux-windows/dataset/口袋妖怪", 0.6,30,30,3,true,false);
-    for(int i=0;i<80;i++)
-        model.setSubModelHiddenNodes(i,120+5*i);
+    //训练ELM_IN_ELM模型.一般数据集
+    /*int nmodels=20;
+    ELM_IN_ELM_Model model(nmodels,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/50_10photos", 0.7,100,100,1);
+    for(int i=0;i<nmodels;i++)
+        model.setSubModelHiddenNodes(i,200);
     model.fitSubModels();
     model.fitMainModel();
     model.save();*/
     
-    
-    /*int n_model = 512;
+    //训练ELM_IN_ELM模型.MNIST数据集
+    int n_model = 10;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.5);
+    model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/debug.csv",1);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,8);
+        model.setSubModelHiddenNodes(n,20);
     model.fitSubModels();
-    model.fitMainModel();*/
-    //model.save();
+    model.fitMainModel();
+    model.save();
     
-    
-    //ELM_IN_ELM_Model model2;
-    //model2.load("/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    //model2.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0);
+    //载入ELM_IN_ELM模型,再次训练
+    /*ELM_IN_ELM_Model model2;
+    model2.load("/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model2.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0.5);
+    model2.fitSubModels();
+    model2.fitMainModel();
+    model2.save();*/
     //model2.validate();
     
     //贪婪法训练
@@ -36,21 +40,10 @@ int main()
     model.init_greedyFitWhole(3);*/
     
     /*ELM_Model model;
-    model.loadMnistData("/run/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
-    model.setHiddenNodes(200);
+    //model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
+    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/20_10photos",0.7,50,50,1);
+    model.setHiddenNodes(1200);
     model.fit();*/
-    
-    int n_hiddenLayer = 3;
-    std::vector<int> hiddenNodes(n_hiddenLayer,20);
-    //hiddenNodes.push_back(1024);
-    //hiddenNodes.push_back(512);
-    //hiddenNodes.push_back(256);
-    //hiddenNodes.push_back(128);
-    //hiddenNodes.push_back(64);
-    
-    DELM_Model model(n_hiddenLayer,hiddenNodes);
-    model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_train.csv",0.3);
-    model.fit();
     
     return 0;
 }

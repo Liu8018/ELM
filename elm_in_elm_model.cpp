@@ -107,8 +107,13 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize, bool validating)
         batchSize = m_trainImgs.size();
     m_C = m_trainLabelBins[0].size();
     cv::Mat H(cv::Size(M*m_C,batchSize),CV_32F);
-    cv::Mat T(cv::Size(m_C,batchSize),CV_32F);
+    cv::Mat batchTarget(cv::Size(m_C,batchSize),CV_32F);
     
+    //转化标签 bool->Mat
+    cv::Mat allTarget;
+    label2target(m_trainLabelBins,allTarget);
+    
+    //输出矩阵大小信息
     std::cout<<"Q: "<<m_Q<<std::endl
              <<"batchSize: "<<batchSize<<std::endl
              <<"M: "<<M<<std::endl
@@ -130,20 +135,21 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize, bool validating)
     int trainedRatio = 0;
     for(int i=0;i+batchSize<=m_Q;i+=batchSize)
     {
-        std::vector<cv::Mat> batchMats(m_trainImgs.begin()+i,m_trainImgs.begin()+i+batchSize);
+        std::vector<cv::Mat> batchTrainImgs(m_trainImgs.begin()+i,m_trainImgs.begin()+i+batchSize);
 
-        //为H和T赋值
+        //为H和batchTarget赋值
         for(int m=0;m<m_n_models;m++)
         {
             cv::Mat ROI = H(cv::Range(0,batchSize),cv::Range(m*m_C,(m+1)*m_C));
-            m_subModels[m].batchQuery(batchMats,ROI);
+            m_subModels[m].batchQuery(batchTrainImgs,ROI);
         }
-        label2target(m_trainLabelBins,T);
+        batchTarget = allTarget(cv::Range(i,i+batchSize),cv::Range(0,m_C));
 
         //迭代更新K
         m_K = m_K + H.t() * H;
+        
         //迭代更新F
-        m_F = m_F + m_K.inv(1) * H.t() * (T - H*m_F);
+        m_F = m_F + m_K.inv(1) * H.t() * (batchTarget - H*m_F);
 
         //输出信息
         int ratio = (i+batchSize)/(float)m_Q*100;
@@ -157,11 +163,11 @@ void ELM_IN_ELM_Model::fitMainModel(int batchSize, bool validating)
             
             //计算在该批次训练数据上的准确率
             cv::Mat output = H * m_F;
-            float score = calcScore(output,T);
+            float score = calcScore(output,batchTarget);
             std::cout<<"Score on batch training data:"<<score<<std::endl;
             
             //计算在测试数据上的准确率
-            if(validating)
+            if(validating && m_testImgs.size()>0)
                 validate();
         }
     }

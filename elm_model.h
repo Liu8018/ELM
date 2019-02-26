@@ -44,8 +44,6 @@ public:
     //计算在测试数据上的准确率
     float validate();
     
-    //自编码
-    void autoEncode(cv::Mat &mat, int n_hiddenNodes, cv::Mat &W);
 private:
     int m_randomState;
     
