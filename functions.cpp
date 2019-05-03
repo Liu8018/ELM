@@ -159,7 +159,7 @@ void loadMnistData_csv(const std::string path, const float trainSampleRatio,
 //从AxB到1xAB
 void mat2line(const cv::Mat &mat, cv::Mat &line, const int channels)
 {
-    cv::resize(line,line,cv::Size(mat.rows*mat.cols*channels,1));
+    line.create(cv::Size(mat.rows*mat.cols*channels,1),CV_32F);
     
     if(channels==1)
     {
@@ -194,7 +194,7 @@ void mats2lines(const std::vector<cv::Mat> &mats, cv::Mat &output, const int cha
         cv::Mat lineROI = output(cv::Range(i,i+1),cv::Range(0,output.cols));
         mat2line(mats[i],lineROI, channels);
     }
-};
+}
 
 //转化label为target
 //从QxC到QxC
@@ -238,17 +238,19 @@ void normalize(cv::Mat &mat)
 {
     double minVal,maxVal;
     cv::minMaxIdx(mat,&minVal,&maxVal);
+    double average = (minVal+maxVal)/2;
+    double range = (maxVal-minVal)/2;
     
     for(int i=0;i<mat.rows;i++)
         for(int j=0;j<mat.cols;j++)
-            mat.at<float>(i,j) = (mat.at<float>(i,j)-minVal) / (maxVal-minVal);
+            mat.at<float>(i,j) = (mat.at<float>(i,j)-average) / range;
 }
 
 void normalize_img(cv::Mat &mat)
 {
     for(int i=0;i<mat.rows;i++)
         for(int j=0;j<mat.cols;j++)
-            mat.at<float>(i,j) = mat.at<float>(i,j) / 255.0;
+            mat.at<float>(i,j) = (mat.at<float>(i,j)-127) / 127.0;
 }
 
 //遍历一个目录
@@ -318,5 +320,6 @@ void randomGenerate(cv::Mat &mat, cv::Size size, int randomState)
         rng.state = (unsigned)time(NULL);
     for(int i=0;i<mat.rows;i++)
         for(int j=0;j<mat.cols;j++)
+            //mat.at<float>(i,j) = rng.gaussian(0.2);
             mat.at<float>(i,j) = rng.uniform(-1.0,1.0);
 }

@@ -298,7 +298,6 @@ void ELM_IN_ELM_Model::query(const cv::Mat &mat, std::string &label)
     {
         cv::Mat ROI = H(cv::Range(0,1),cv::Range(m*m_C,(m+1)*m_C));
         m_subModels[m].query(mat,ROI);
-        normalize(ROI);
     }
     
     cv::Mat output = H * m_F;

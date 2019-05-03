@@ -1,8 +1,6 @@
 #ifndef FUNCS_H
 #define FUNCS_H
 
-#endif // FUNCS_H
-
 #include <iostream>
 #include <fstream>
 #include <opencv2/core.hpp>
@@ -58,3 +56,5 @@ int getMaxId(const cv::Mat &line);
 
 //计分
 float calcScore(const cv::Mat &outputData, const cv::Mat &target);
+
+#endif // FUNCS_H
