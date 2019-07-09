@@ -14,27 +14,25 @@ int main()
     
     //训练ELM_IN_ELM模型.MNIST数据集
     
-    int n_model = 10;
-    ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    //model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0.8);
-    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/digit",1,16,16,1);
-    for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,100);
-    model.fitSubModels();
-    model.fitMainModel();
-    model.save();
-    
-    
     /*
     int n_model = 10;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/口袋妖怪",0.7,50,50,3);
+    model.loadMnistData("/media/liu/D/linux-windows/dataset/MNIST_data2/mnist_test.csv",0.8);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,100);
+        model.setSubModelHiddenNodes(n,300);
     model.fitSubModels();
     model.fitMainModel();
     model.save();
     */
+    
+    int n_model = 20;
+    ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
+    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/d_c",0.7,16,16,1);
+    for(int n=0;n<n_model;n++)
+        model.setSubModelHiddenNodes(n,200);
+    model.fitSubModels();
+    model.fitMainModel();
+    model.save();
     
     //载入ELM_IN_ELM模型,再次训练
     /*ELM_IN_ELM_Model model2;

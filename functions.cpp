@@ -40,6 +40,12 @@ void inputImgsFrom(const std::string datasetPath,
                 if(channels == 1)
                     src = cv::imread(subdir_files[j],0);
                 
+                if(src.empty())
+                {
+                    std::cout<<"failed to read "<<subdir_files[j]<<std::endl;
+                    continue;
+                }
+                
                 trainImgs.push_back(src);
                 
                 std::vector<bool> labelBin(classes,0);
@@ -54,6 +60,12 @@ void inputImgsFrom(const std::string datasetPath,
                     src = cv::imread(subdir_files[j]);
                 if(channels == 1)
                     src = cv::imread(subdir_files[j],0);
+                
+                if(src.empty())
+                {
+                    std::cout<<"failed to read "<<subdir_files[j]<<std::endl;
+                    continue;
+                }
                 
                 testImgs.push_back(src);
                 
