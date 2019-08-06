@@ -335,3 +335,21 @@ void randomGenerate(cv::Mat &mat, cv::Size size, int randomState)
             //mat.at<float>(i,j) = rng.gaussian(0.2);
             mat.at<float>(i,j) = rng.uniform(-1.0,1.0);
 }
+
+std::vector<std::string> cvStrs2stdStrs(std::vector<cv::String> cvStrs)
+{
+    std::vector<std::string> stdStrs;
+    for(int i=0;i<cvStrs.size();i++)
+        stdStrs.push_back(std::string(cvStrs[i]));
+    
+    return stdStrs;
+}
+
+std::vector<cv::String> stdStrs2cvStrs(std::vector<std::string> stdStrs)
+{
+    std::vector<cv::String> cvStrs;
+    for(int i=0;i<stdStrs.size();i++)
+        cvStrs.push_back(cv::String(stdStrs[i]));
+    
+    return cvStrs;
+}

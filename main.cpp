@@ -25,11 +25,11 @@ int main()
     model.save();
     */
     
-    int n_model = 20;
+    int n_model = 10;
     ELM_IN_ELM_Model model(n_model,"/home/liu/codes/项目/ELM/trained_ELM_IN_ELM_models/a/");
-    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/d_c",0.7,16,16,1);
+    model.loadStandardDataset("/media/liu/D/linux-windows/dataset/digit_character",0.7,16,16,1);
     for(int n=0;n<n_model;n++)
-        model.setSubModelHiddenNodes(n,200);
+        model.setSubModelHiddenNodes(n,100);
     model.fitSubModels();
     model.fitMainModel();
     model.save();

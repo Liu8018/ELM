@@ -250,11 +250,12 @@ void ELM_IN_ELM_Model::save()
     cv::FileStorage fswrite(m_modelPath+"mainModel.xml",cv::FileStorage::WRITE);
     
     fswrite<<"n_models"<<m_n_models;
-    fswrite<<"subModelPath"<<m_modelPath;
+    fswrite<<"subModelPath"<<cv::String(m_modelPath);
     fswrite<<"channels"<<m_channels;
     fswrite<<"C"<<m_C;
     fswrite<<"F"<<m_F;
-    fswrite<<"label_string"<<m_label_string;
+    std::vector<cv::String> label_string = stdStrs2cvStrs(m_label_string);
+    fswrite<<"label_string"<<label_string;
     
     fswrite.release();
     
@@ -272,11 +273,15 @@ void ELM_IN_ELM_Model::load(std::string modelDir)
     cv::FileStorage fsread(m_modelPath+"mainModel.xml",cv::FileStorage::READ);
 
     fsread["n_models"]>>m_n_models;
-    fsread["subModelPath"]>>m_modelPath;
+    cv::String modelPath;
+    fsread["subModelPath"]>>modelPath;
+    m_modelPath = std::string(modelPath);
     fsread["channels"]>>m_channels;
     fsread["C"]>>m_C;
     fsread["F"]>>m_F;
-    fsread["label_string"]>>m_label_string;
+    std::vector<cv::String> label_string;
+    fsread["label_string"]>>label_string;
+    m_label_string = cvStrs2stdStrs(label_string);
 
     fsread.release();
     

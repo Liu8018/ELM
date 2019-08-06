@@ -267,8 +267,9 @@ void ELM_Model::save(std::string path, std::string K_path)
     fswrite<<"W_IH"<<m_W_IH;
     fswrite<<"W_HO"<<m_W_HO;
     fswrite<<"B_H"<<m_B_H;
-    fswrite<<"activationMethod"<<m_activationMethod;
-    fswrite<<"label_string"<<m_label_string;
+    fswrite<<"activationMethod"<<cv::String(m_activationMethod);
+    std::vector<cv::String> label_string = stdStrs2cvStrs(m_label_string);
+    fswrite<<"label_string"<<label_string;
     
     if(K_path != "")
     {
@@ -290,8 +291,12 @@ void ELM_Model::load(std::string path, std::string K_path)
     fsread["W_IH"]>>m_W_IH;
     fsread["W_HO"]>>m_W_HO;
     fsread["B_H"]>>m_B_H;
-    fsread["activationMethod"]>>m_activationMethod;
-    fsread["label_string"]>>m_label_string;
+    cv::String activationMethod;
+    fsread["activationMethod"]>>activationMethod;
+    m_activationMethod = std::string(activationMethod);
+    std::vector<cv::String> label_string;
+    fsread["label_string"]>>label_string;
+    m_label_string = cvStrs2stdStrs(label_string);
     
     if(K_path != "")
     {

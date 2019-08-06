@@ -57,4 +57,8 @@ int getMaxId(const cv::Mat &line);
 //计分
 float calcScore(const cv::Mat &outputData, const cv::Mat &target);
 
+std::vector<std::string> cvStrs2stdStrs(std::vector<cv::String> cvStrs);
+
+std::vector<cv::String> stdStrs2cvStrs(std::vector<std::string> stdStrs);
+
 #endif // FUNCS_H
